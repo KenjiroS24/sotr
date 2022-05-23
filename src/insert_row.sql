@@ -2,8 +2,8 @@
 insert into sotr_settings.items
 insert into sotr_settings.hero_state_lvl
 insert into sotr_settings.enemy_list
-insert into sotr_settings.inventory
-insert into sotr_settings.hero_condition
+insert into sotr_game.g_inventory
+insert into sotr_game.g_hero
 
 Для перезапуска таблицы и обновления счетчика используйте: truncate [table] restart identity cascade;
 */
@@ -66,18 +66,18 @@ values
 --select * from sotr_settings.enemy_list;
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-insert into sotr_game.g_inventory (in_id, in_items_id, in_cnt) 
+insert into sotr_game.g_inventory (in_items_id, in_cnt) 
 values
-(1, 2, 1);
+(2, 1);
 
---select * from sotr_settings.inventory;
+--select * from sotr_game.g_inventory;
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_game.g_hero (h_id, h_name, h_lvl, h_exp, h_heal_points, h_attack, h_agility, h_weapon, h_decoration) 
 values
-(1, 'Adrian', 1, 0, 200, 15, 0.01, null);
+(1, 'Adrian', 1, 0, 200, 15, 0.01, null, null);
 
---select * from sotr_settings.hero_condition;									
+--select * from sotr_game.g_hero;									
 									
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
