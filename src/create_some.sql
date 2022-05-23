@@ -84,7 +84,7 @@ COMMENT ON TABLE sotr_game.g_hero IS 'Характеристика персон�
 
 create table sotr_game.g_enemy ( 
 	e_id int4 primary key GENERATED ALWAYS AS IDENTITY,
-	e_name varchar unique,
+	e_name varchar,
 	e_location varchar,
 	e_exp int4,
 	e_heal_points int4,
