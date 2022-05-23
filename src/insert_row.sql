@@ -4,6 +4,7 @@ insert into sotr_settings.hero_state_lvl
 insert into sotr_settings.enemy_list
 insert into sotr_game.g_inventory
 insert into sotr_game.g_hero
+insert into sotr_settings.attack_list
 
 Для перезапуска таблицы и обновления счетчика используйте: truncate [table] restart identity cascade;
 */
