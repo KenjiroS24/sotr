@@ -1,3 +1,15 @@
+/* 	СОДЕРЖАНИЕ:
+create schema sotr_game
+create schema sotr_settings
+create table sotr_settings.items
+create table sotr_settings.hero_state_lvl
+create table sotr_settings.enemy_list
+create table sotr_settings.inventory
+create table sotr_settings.hero_condition
+*/
+
+
+
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
 
