@@ -7,6 +7,8 @@ create table sotr_settings.enemy_list
 create table sotr_game.g_inventory
 create table sotr_game.g_hero
 create table sotr_game.g_enemy
+create or replace view sotr_game.v_game_statistic
+create table sotr_settings.game_statistic
 */
 
 drop schema if exists sotr_game cascade;
