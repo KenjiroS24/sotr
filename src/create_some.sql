@@ -21,6 +21,8 @@ create table sotr_settings.items (
 	effect jsonb
 );
 
+COMMENT ON TABLE sotr_settings.items IS 'Список всех предметов';
+
 
 create table sotr_settings.hero_state_lvl (
 	lvl_id int4 primary key,
@@ -29,6 +31,8 @@ create table sotr_settings.hero_state_lvl (
 	attack int4,
 	agility double precision
 );
+
+COMMENT ON TABLE sotr_settings.hero_state_lvl IS 'Уровни и способности на уровнях';
 
 
 create table sotr_settings.enemy_list (
@@ -44,6 +48,9 @@ create table sotr_settings.enemy_list (
 	e_weakness jsonb
 );
 
+COMMENT ON TABLE sotr_settings.enemy_list IS 'Список всех врагов';
+
+
 create table sotr_game.g_inventory (
 	in_id int4 NOT null GENERATED ALWAYS as IDENTITY,
 	in_items_id int4 NULL,
@@ -51,6 +58,9 @@ create table sotr_game.g_inventory (
 	CONSTRAINT inventory_pkey PRIMARY KEY (in_id),
 	CONSTRAINT inventory_in_items_id_fkey FOREIGN KEY (in_items_id) REFERENCES sotr_settings.items(i_id)
 );
+
+COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря в текущей сессии';
+
 
 create table sotr_game.g_hero (
 	h_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
@@ -68,6 +78,8 @@ create table sotr_game.g_hero (
 	CONSTRAINT hero_condition_h_weapon_fkey FOREIGN KEY (h_weapon) REFERENCES sotr_settings.items(i_id)
 );
 
+COMMENT ON TABLE sotr_game.g_hero IS 'Характеристика персонажа в текущей сессии';
+
 create table sotr_game.g_enemy ( 
 	e_id int4 primary key GENERATED ALWAYS AS IDENTITY,
 	e_name varchar unique,
@@ -80,12 +92,8 @@ create table sotr_game.g_enemy (
 	e_weakness jsonb
 );
 
-COMMENT ON TABLE sotr_settings.items IS 'Список всех предметов';
-COMMENT ON TABLE sotr_settings.hero_state_lvl IS 'Уровни и способности на уровнях';
-COMMENT ON TABLE sotr_settings.enemy_list IS 'Список всех врагов';
-COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря в текущей сессии';
-COMMENT ON TABLE sotr_game.g_hero IS 'Характеристика персонажа в текущей сессии';
 COMMENT ON TABLE sotr_game.g_enemy IS 'Список врагов в действующей сессии';
+
 
 CREATE TABLE sotr_settings.game_statistic (
 	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY, -- номер прохождения
