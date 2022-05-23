@@ -9,6 +9,7 @@ create table sotr_game.g_hero
 create table sotr_game.g_enemy
 create or replace view sotr_game.v_game_statistic
 create table sotr_settings.game_statistic
+create table sotr_settings.attack_list
 */
 
 drop schema if exists sotr_game cascade;
@@ -131,3 +132,13 @@ AS WITH total AS (
  LIMIT 1;
 
 COMMENT ON VIEW sotr_game.v_game_statistic IS 'Статистика игры. Сколько врагов убитов, сколько EXP заработано. (Учет сессии и общий)';
+
+create table sotr_settings.attack_list (
+	att_id int4 not null,
+	enemy_attack text not null,
+	hero_attack text not null,
+	effect text not null,
+	CONSTRAINT attack_list_att_id_pkey PRIMARY KEY (att_id)
+);
+
+COMMENT ON TABLE sotr_settings.attack_list IS 'Виды атак';
