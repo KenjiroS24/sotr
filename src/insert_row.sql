@@ -66,14 +66,14 @@ values
 --select * from sotr_settings.enemy_list;
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-insert into sotr_settings.inventory (in_id, in_items_id, in_cnt) 
+insert into sotr_game.g_inventory (in_id, in_items_id, in_cnt) 
 values
 (1, 2, 1);
 
 --select * from sotr_settings.inventory;
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-insert into sotr_settings.hero_condition (h_id, h_name, h_lvl, h_exp, h_heal_points, h_attack, h_agility, h_decoration) 
+insert into sotr_game.g_hero (h_id, h_name, h_lvl, h_exp, h_heal_points, h_attack, h_agility, h_weapon, h_decoration) 
 values
 (1, 'Adrian', 1, 0, 200, 15, 0.01, null);
 
