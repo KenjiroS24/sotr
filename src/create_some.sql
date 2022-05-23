@@ -7,8 +7,6 @@ create table sotr_settings.enemy_list
 create table sotr_game.g_inventory
 create table sotr_game.g_hero
 create table sotr_game.g_enemy
-create table sotr_settings.game_statistic
-create or replace view sotr_game.v_game_statistic
 */
 
 drop schema if exists sotr_game cascade;
@@ -22,6 +20,7 @@ create table sotr_settings.items (
 	i_title varchar unique,
 	effect jsonb
 );
+
 
 create table sotr_settings.hero_state_lvl (
 	lvl_id int4 primary key,
@@ -45,7 +44,7 @@ create table sotr_settings.enemy_list (
 	e_weakness jsonb
 );
 
-CREATE TABLE sotr_game.g_inventory (
+create table sotr_game.g_inventory (
 	in_id int4 NOT null GENERATED ALWAYS as IDENTITY,
 	in_items_id int4 NULL,
 	in_cnt int4 NULL,
@@ -53,7 +52,7 @@ CREATE TABLE sotr_game.g_inventory (
 	CONSTRAINT inventory_in_items_id_fkey FOREIGN KEY (in_items_id) REFERENCES sotr_settings.items(i_id)
 );
 
-CREATE TABLE sotr_game.g_hero (
+create table sotr_game.g_hero (
 	h_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	h_name varchar NULL,
 	h_lvl int4 NULL,
@@ -69,7 +68,7 @@ CREATE TABLE sotr_game.g_hero (
 	CONSTRAINT hero_condition_h_weapon_fkey FOREIGN KEY (h_weapon) REFERENCES sotr_settings.items(i_id)
 );
 
-CREATE TABLE sotr_game.g_enemy ( 
+create table sotr_game.g_enemy ( 
 	e_id int4 primary key GENERATED ALWAYS AS IDENTITY,
 	e_name varchar unique,
 	e_location varchar,
@@ -81,36 +80,9 @@ CREATE TABLE sotr_game.g_enemy (
 	e_weakness jsonb
 );
 
-CREATE TABLE sotr_settings.game_statistic (
-	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY, -- номер прохождения
-	cnt_kill_enemy int4 NULL, -- кол-во убитых врагов в прохождении
-	cnt_received_exp int4 NULL, -- кол-во полученной экспы
-	game_completed bool NULL, -- игра пройдена? Если убит Рыцарь Ада, то да
-	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
-);
-COMMENT ON TABLE sotr_settings.game_statistic IS 'Статистика игры';
-
--- Column comments
-
-COMMENT ON COLUMN sotr_settings.game_statistic.num_walkthrough IS 'номер прохождения';
-COMMENT ON COLUMN sotr_settings.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
-COMMENT ON COLUMN sotr_settings.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
-COMMENT ON COLUMN sotr_settings.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
-
-CREATE OR REPLACE VIEW sotr_game.v_game_statistic
-AS WITH total AS (
-         SELECT sum(gst.cnt_kill_enemy) AS cnt_kill_enemy_total,
-            sum(gst.cnt_received_exp) AS cnt_received_exp_total
-           FROM sotr_settings.game_statistic gst
-        )
- SELECT gs.num_walkthrough,
-    gs.cnt_kill_enemy,
-    gs.cnt_received_exp,
-    t.cnt_kill_enemy_total,
-    t.cnt_received_exp_total
-   FROM total t,
-    sotr_settings.game_statistic gs
-  ORDER BY gs.num_walkthrough DESC
- LIMIT 1;
-
-COMMENT ON VIEW sotr_game.v_game_statistic IS 'Статистика игры. Сколько врагов убитов, сколько EXP заработано. (Учет сессии и общий)';
+COMMENT ON TABLE sotr_settings.items IS 'Список всех предметов';
+COMMENT ON TABLE sotr_settings.hero_state_lvl IS 'Уровни и способности на уровнях';
+COMMENT ON TABLE sotr_settings.enemy_list IS 'Список всех врагов';
+COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря в текущей сессии';
+COMMENT ON TABLE sotr_game.g_hero IS 'Характеристика персонажа в текущей сессии';
+COMMENT ON TABLE sotr_game.g_enemy IS 'Список врагов в действующей сессии';
