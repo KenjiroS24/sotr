@@ -86,3 +86,38 @@ COMMENT ON TABLE sotr_settings.enemy_list IS 'Список всех врагов
 COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря в текущей сессии';
 COMMENT ON TABLE sotr_game.g_hero IS 'Характеристика персонажа в текущей сессии';
 COMMENT ON TABLE sotr_game.g_enemy IS 'Список врагов в действующей сессии';
+
+CREATE TABLE sotr_settings.game_statistic (
+	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY, -- номер прохождения
+	cnt_kill_enemy int4 NULL, -- кол-во убитых врагов в прохождении
+	cnt_received_exp int4 NULL, -- кол-во полученной экспы
+	game_completed bool NULL, -- игра пройдена? Если убит Рыцарь Ада, то да
+	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
+);
+COMMENT ON TABLE sotr_settings.game_statistic IS 'Статистика игры';
+
+-- Column comments
+
+COMMENT ON COLUMN sotr_settings.game_statistic.num_walkthrough IS 'номер прохождения';
+COMMENT ON COLUMN sotr_settings.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
+COMMENT ON COLUMN sotr_settings.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
+COMMENT ON COLUMN sotr_settings.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
+
+
+CREATE OR REPLACE VIEW sotr_game.v_game_statistic
+AS WITH total AS (
+         SELECT sum(gst.cnt_kill_enemy) AS cnt_kill_enemy_total,
+            sum(gst.cnt_received_exp) AS cnt_received_exp_total
+           FROM sotr_settings.game_statistic gst
+        )
+ SELECT gs.num_walkthrough,
+    gs.cnt_kill_enemy,
+    gs.cnt_received_exp,
+    t.cnt_kill_enemy_total,
+    t.cnt_received_exp_total
+   FROM total t,
+    sotr_settings.game_statistic gs
+  ORDER BY gs.num_walkthrough DESC
+ LIMIT 1;
+
+COMMENT ON VIEW sotr_game.v_game_statistic IS 'Статистика игры. Сколько врагов убитов, сколько EXP заработано. (Учет сессии и общий)';
