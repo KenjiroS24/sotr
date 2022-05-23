@@ -27,4 +27,4 @@ $function$;
 
 --
 --Вызов
-select generate_series(1,10), sotr_settings.get_random(0.4);
+--select generate_series(1,10), sotr_settings.get_random(0.4);
