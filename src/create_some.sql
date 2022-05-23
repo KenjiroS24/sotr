@@ -6,6 +6,7 @@ create table sotr_settings.hero_state_lvl
 create table sotr_settings.enemy_list
 create table sotr_game.g_inventory
 create table sotr_game.g_hero
+create table sotr_game.g_enemy
 */
 
 drop schema if exists sotr_game cascade;
@@ -64,4 +65,16 @@ CREATE TABLE sotr_game.g_hero (
 	CONSTRAINT hero_condition_pkey PRIMARY KEY (h_id),
 	CONSTRAINT hero_condition_h_decoration_fkey FOREIGN KEY (h_decoration) REFERENCES sotr_settings.items(i_id),
 	CONSTRAINT hero_condition_h_weapon_fkey FOREIGN KEY (h_weapon) REFERENCES sotr_settings.items(i_id)
+);
+
+create table sotr_game.g_enemy ( 
+	e_id int4 primary key,
+	e_name varchar unique,
+	e_location varchar,
+	e_exp int4,
+	e_heal_points int4,
+	e_attack int4,
+	e_drop_items int4 references sotr_settings.items (i_id),
+	e_chance_drop double precision,
+	e_weakness jsonb
 );
