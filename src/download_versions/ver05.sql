@@ -1,4 +1,4 @@
---VER 0.5 15:55 23.05.2022
+--VER 0.5 16:45 23.05.2022
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
@@ -24,7 +24,6 @@ create table sotr_settings.hero_state_lvl (
 );
 
 COMMENT ON TABLE sotr_settings.hero_state_lvl IS 'Уровни и способности на уровнях';
-
 
 create table sotr_settings.enemy_list (
 	e_id int4 primary key,
@@ -137,10 +136,6 @@ values
 
 --select * from sotr_settings.items;
 
-/*select *, effect->>'num'
-	from sotr_settings.items
-where effect->>'type' = 'decoration';*/
-
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_settings.hero_state_lvl (lvl_id, "exp", heal_points, attack, agility) 
@@ -195,6 +190,50 @@ values
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
+create or replace function sotr_game.start_game()
+returns text
+language plpgsql
+as $function$
+begin
+	
+	--Проверка на запущенную сессию. Если игра уже запущена (враги сгенерены), то запустить игру снова невозможно
+	perform * from sotr_game.g_enemy as ge;
+	if found then
+		return 'Игровая сессия уже запущена. Завершите игру, либо перезапустите.';
+	end if;
+
+	--Создание новой статистики
+	insert into sotr_settings.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed)
+	values
+		(0,0,false);
+ 
+	perform sotr_settings.create_enemy(1, 3);
+	perform sotr_settings.create_enemy(2, 3);
+	perform sotr_settings.create_enemy(4, 2);
+	perform sotr_settings.create_enemy(11, 1);
+	perform sotr_settings.create_enemy(3, 2);
+	perform sotr_settings.create_enemy(6, 3);
+	perform sotr_settings.create_enemy(7, 1);
+	perform sotr_settings.create_enemy(12, 1);
+	perform sotr_settings.create_enemy(10, 3);
+	perform sotr_settings.create_enemy(9, 2);
+	perform sotr_settings.create_enemy(8, 1);
+	perform sotr_settings.create_enemy(13, 1);
+
+	--Проверка. Если игра ранее была пройдена, то добавляется секретный босс
+	perform *
+    	from sotr_settings.game_statistic as gs
+	where gs.game_completed;
+	if found then
+		perform sotr_settings.create_enemy(14, 1);
+		return 'С возвращением в мир зла!';
+	end if;
+
+	return 'Адриан начал свое путешествие в мир зла.';
+
+end;
+$function$;
+
 CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
  RETURNS void
  LANGUAGE plpgsql
@@ -241,8 +280,3 @@ begin
 
 end;
 $function$;
-
-
---
---Вызов
-select generate_series(1,10), sotr_settings.get_random(0.4);
