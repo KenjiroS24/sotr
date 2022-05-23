@@ -4,8 +4,8 @@ create schema sotr_settings
 create table sotr_settings.items
 create table sotr_settings.hero_state_lvl
 create table sotr_settings.enemy_list
-create table sotr_settings.inventory
-create table sotr_settings.hero_condition
+create table sotr_game.g_inventory
+create table sotr_game.g_hero
 */
 
 drop schema if exists sotr_game cascade;
@@ -42,21 +42,26 @@ create table sotr_settings.enemy_list (
 	e_weakness jsonb
 );
 
-create table sotr_settings.inventory (
-	in_id int4 primary key,
-	in_items_id int4 references sotr_settings.items (i_id),
-	in_cnt int4
+CREATE TABLE sotr_game.g_inventory (
+	in_id int4 NOT null GENERATED ALWAYS as IDENTITY,
+	in_items_id int4 NULL,
+	in_cnt int4 NULL,
+	CONSTRAINT inventory_pkey PRIMARY KEY (in_id),
+	CONSTRAINT inventory_in_items_id_fkey FOREIGN KEY (in_items_id) REFERENCES sotr_settings.items(i_id)
 );
 
-create table sotr_settings.hero_condition (
-	h_id int4 primary key,
-	h_name varchar unique,
-	h_description text,
-	h_lvl int4,
-	h_exp int4,
-	h_heal_points int4,
-	h_attack int4,
-	h_agility double precision,
-	h_weapon int4 references sotr_settings.items (i_id) default 2,
-	h_decoration int4 references sotr_settings.items (i_id)
+CREATE TABLE sotr_game.g_hero (
+	h_id int4 NOT NULL,
+	h_name varchar NULL,
+	h_lvl int4 NULL,
+	h_exp int4 NULL,
+	h_heal_points int4 NULL,
+	h_attack int4 NULL,
+	h_agility float8 NULL,
+	h_weapon int4 NULL DEFAULT 2,
+	h_decoration int4 NULL,
+	CONSTRAINT hero_condition_h_name_key UNIQUE (h_name),
+	CONSTRAINT hero_condition_pkey PRIMARY KEY (h_id),
+	CONSTRAINT hero_condition_h_decoration_fkey FOREIGN KEY (h_decoration) REFERENCES sotr_settings.items(i_id),
+	CONSTRAINT hero_condition_h_weapon_fkey FOREIGN KEY (h_weapon) REFERENCES sotr_settings.items(i_id)
 );
