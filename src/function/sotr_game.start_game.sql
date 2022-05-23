@@ -34,9 +34,10 @@ begin
 	where gs.game_completed;
 	if found then
 		perform sotr_settings.create_enemy(14, 1);
+		return 'С возвращением в мир зла!';
 	end if;
 
-	return 'Done';
+	return 'Адриан начал свое путешествие в мир зла.';
 
 end;
 $function$;
