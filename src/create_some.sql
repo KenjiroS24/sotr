@@ -8,8 +8,6 @@ create table sotr_settings.inventory
 create table sotr_settings.hero_condition
 */
 
-
-
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
 
