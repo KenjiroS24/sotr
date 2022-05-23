@@ -31,7 +31,7 @@ create table sotr_settings.hero_state_lvl (
 
 
 create table sotr_settings.enemy_list (
-	e_id int4 primary key GENERATED ALWAYS AS IDENTITY,
+	e_id int4 primary key,
 	e_name varchar unique,
 	e_description text,
 	e_location varchar,
