@@ -1,5 +1,29 @@
---VER 0.6 
---11:56 24.05.2022
+--VER 0.7
+--19:15 24.05.2022
+
+create schema sotr_game
+create schema sotr_settings
+create table sotr_settings.items
+create table sotr_settings.hero_state_lvl
+create table sotr_settings.enemy_list
+create table sotr_game.g_inventory
+create table sotr_game.g_hero
+create table sotr_game.g_enemy
+create or replace view sotr_game.v_game_statistic
+create table sotr_settings.game_statistic
+create table sotr_settings.attack_list
+
+insert into sotr_settings.items
+insert into sotr_settings.hero_state_lvl
+insert into sotr_settings.enemy_list
+insert into sotr_game.g_inventory
+insert into sotr_game.g_hero
+insert into sotr_settings.attack_list
+
+create or replace function sotr_game.start_game()
+CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
+CREATE OR REPLACE FUNCTION sotr_settings.get_hit(_enemy_id integer, _hero_type_hit integer)
+create or replace function sotr_settings.get_random(_percent_in double precision)
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
@@ -132,6 +156,7 @@ create table sotr_settings.attack_list (
 
 COMMENT ON TABLE sotr_settings.attack_list IS 'Виды атак';
 
+
 insert into sotr_settings.items (i_id, i_title, effect) 
 values
 (1, 'Травы', '{"num": 30, "type": "heal"}'::jsonb),
@@ -211,64 +236,23 @@ values
 (2, 'Промах', 'Уклонение', 'Ничего'),
 (3, 'Промах', 'Парирование', 'Ничего'),
 (4, 'Промах', 'Удар Призрака', 'Враг наносит критический удар по герою (-50% хп)'),
-(5, 'Критический удар', 'Быстрый удар', 'Обычный обмен ударами'),
+(5, 'Критический удар', 'Быстрый удар', 'Враг наносит критический удар'),
 (6, 'Критический удар', 'Уклонение', 'Герой не получает урона и производит контратаку (-50% хп)'),
 (7, 'Критический удар', 'Парирование', 'Герой получает урон *2'),
 (8, 'Критический удар', 'Удар Призрака', '-35% ХП каждому'),
-(9, 'Безвольный удар', 'Быстрый удар', 'Обычный обмен ударами'),
-(10, 'Безвольный удар', 'Уклонение', 'Герой получает урон *2'),
+(9, 'Безвольный удар', 'Быстрый удар', 'Удар врага делится на 2, герой наносит стандартный удар'),
+(10, 'Безвольный удар', 'Уклонение', 'Герой получает полный (стандартный) урон, сам удар не наносит'),
 (11, 'Безвольный удар', 'Парирование', 'Урон врага = 0'),
 (12, 'Безвольный удар', 'Удар Призрака', 'Герой наносит смертельный удар врагу (-50% ХП), сам получает урон деленный на 2'),
-(13, 'Быстрый удар', 'Быстрый удар', 'Обычный обмен ударами'),
+(13, 'Быстрый удар', 'Быстрый удар', 'Без изменений'),
 (14, 'Быстрый удар', 'Уклонение', 'Только враг наносит удар'),
 (15, 'Быстрый удар', 'Парирование', 'Урон врага делится на 2'),
-(16, 'Быстрый удар', 'Удар Призрака', 'Обычный обмен ударами');
+(16, 'Быстрый удар', 'Удар Призрака', 'Без изменений');
 
 --select * from sotr_settings.attack_list;
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
- RETURNS void
- LANGUAGE plpgsql
-AS $function$
-begin 
-
-	with en as (
-		select generate_series(1,_cnt), e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
-			from sotr_settings.enemy_list el
-		where e_id = _enemy_id
-	)
-	insert into sotr_game.g_enemy (e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
-		select e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
-			from en;
-
-end;
-$function$
-;
-
-COMMENT ON FUNCTION sotr_settings.create_enemy(int4, int4) IS 'Создание врагов. _enemy_id - Ид врага, _cnt - необходимое кол-во.';
-
-create or replace function sotr_settings.get_random(_percent_in double precision)
-returns bool
-language plpgsql
-as $function$
-declare
-p_loss double precision;
-begin 
-	
-	if (_percent_in <= (0.0)::double precision ) then
-		return false;
-	elsif (_percent_in >= (1.0)::double precision ) then
-		return true;
-	end if;
-
-	select 1.0 / _percent_in into p_loss;
-	return (select 1 = ceil(random()*p_loss));
-
-end;
-$function$;
 
 create or replace function sotr_game.start_game()
 returns text
@@ -313,3 +297,190 @@ begin
 
 end;
 $function$;
+
+CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+begin 
+
+	with en as (
+		select generate_series(1,_cnt), e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
+			from sotr_settings.enemy_list el
+		where e_id = _enemy_id
+	)
+	insert into sotr_game.g_enemy (e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
+		select e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
+			from en;
+
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_settings.create_enemy(int4, int4) IS 'Создание врагов. _enemy_id - Ид врага, _cnt - необходимое кол-во.';
+
+CREATE OR REPLACE FUNCTION sotr_settings.get_hit(_enemy_id integer, _hero_type_hit integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+declare
+p_enemy_type_hit varchar; --тип атаки врага
+p_hero_type_hit varchar; --тип атаки героя
+
+p_hero_max_hp int; --предел ХП героя
+p_enemy_max_hp int; --предел ХП врага
+
+p_h_lvl int;
+p_hero_attack_point int; --Назначение очков атаки героя
+p_enemy_attack_point int; --Назначение очков атаки врага
+
+begin 
+	--назначение уровня героя, его урон
+		select h_lvl, h_attack into p_h_lvl, p_hero_attack_point 
+	from sotr_game.g_hero as gh;
+	
+	--назначение пределов ХП для героя
+	select heal_points into p_hero_max_hp 
+		from sotr_settings.hero_state_lvl as hsl where lvl_id = p_h_lvl;
+	
+	--назначение пределов ХП для врага
+	select e_heal_points, e_attack into p_enemy_max_hp, p_enemy_attack_point
+		from sotr_settings.enemy_list as el where e_id = _enemy_id;
+
+	
+	--Рандом атаки врага
+	if (select sotr_settings.get_random(h_agility) from sotr_game.g_hero as gh) then
+		select 'Промах' into p_enemy_type_hit;
+	elsif (select sotr_settings.get_random(0.05)) then
+		select 'Критический удар' into p_enemy_type_hit;
+	elsif (select sotr_settings.get_random(0.15)) then
+		select 'Безвольный удар' into p_enemy_type_hit;
+	else
+		select 'Быстрый удар' into p_enemy_type_hit;
+	end if; 
+--	return to_jsonb(p_enemy_type_hit);
+
+	--Назначение атаки героя
+	if _hero_type_hit = 1 then
+		select 'Быстрый удар' into p_hero_type_hit;
+	elsif _hero_type_hit = 2 then
+		select 'Уклонение' into p_hero_type_hit;
+	elsif _hero_type_hit = 3 then
+		select 'Парирование' into p_hero_type_hit;
+	elsif _hero_type_hit = 4 then
+		select 'Удар Призрака' into p_hero_type_hit;
+	end if; 
+
+	--Сценарий действий
+	if p_enemy_type_hit = 'Промах' and p_hero_type_hit = 'Быстрый удар' then
+		--Только герой наносит удар, удар врага обнуляется
+		p_enemy_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Промах' and p_hero_type_hit = 'Уклонение' then
+		--Атаки обнуляются
+		p_enemy_attack_point = 0;
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Промах' and p_hero_type_hit = 'Парирование' then
+		--Атаки обнуляются
+		p_enemy_attack_point = 0;
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Промах' and p_hero_type_hit = 'Удар Призрака' then
+		--Враг наносит 50 процентов урона, атака героя обнуляется
+		p_enemy_attack_point = (select p_hero_max_hp * 50 / 100);
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Критический удар' and p_hero_type_hit = 'Быстрый удар' then
+		--Враг наносит критический удар (x3)
+		p_enemy_attack_point = p_enemy_attack_point * 3;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Критический удар' and p_hero_type_hit = 'Уклонение' then
+		--Герой не получает урона и производит контратаку (-50% хп)
+		p_enemy_attack_point = 0;
+		p_hero_attack_point = (select p_enemy_max_hp * 50 / 100);
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Критический удар' and p_hero_type_hit = 'Парирование' then
+		--Герой получает урон двойной урон
+		p_enemy_attack_point = p_enemy_attack_point * 2;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Критический удар' and p_hero_type_hit = 'Удар Призрака' then
+		--Минус 35% ХП каждому
+		p_enemy_attack_point = (select p_hero_max_hp * 35 / 100);
+		p_hero_attack_point = (select p_enemy_max_hp * 35 / 100);
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Безвольный удар' and p_hero_type_hit = 'Быстрый удар' then
+		--Удар врага делится на 2, герой наносит стандартный удар
+		p_enemy_attack_point = p_enemy_attack_point / 2;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Безвольный удар' and p_hero_type_hit = 'Уклонение' then
+		--Герой получает полный (стандартный) урон, сам удар не наносит
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Безвольный удар' and p_hero_type_hit = 'Парирование' then
+		--Удар отражается полностью, герой удар не наносит
+		p_enemy_attack_point = 0;
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Безвольный удар' and p_hero_type_hit = 'Удар Призрака' then
+		--Герой наносит смертельный удар врагу (-50% ХП), сам получает урон деленный на 2
+		p_enemy_attack_point = p_enemy_attack_point / 2;
+		p_hero_attack_point = (select p_enemy_max_hp * 50 / 100);
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Быстрый удар' and p_hero_type_hit = 'Быстрый удар' then
+		--Без изменений
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Быстрый удар' and p_hero_type_hit = 'Уклонение' then
+		--Только враг наносит удар
+		p_hero_attack_point = 0;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Быстрый удар' and p_hero_type_hit = 'Парирование' then
+		--Урон врага делится на 2
+		p_enemy_attack_point = p_enemy_attack_point / 2;
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	elsif p_enemy_type_hit = 'Быстрый удар' and p_hero_type_hit = 'Удар Призрака' then
+		--Без изменений
+		return jsonb_build_object('hero_type_hit', p_hero_type_hit, 'enemy_type_hit', p_enemy_type_hit, 'hit_point_hero', p_hero_attack_point, 'hit_point_enemy', p_enemy_attack_point);
+	end if;
+
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_settings.get_hit(int4, int4) IS 'в _enemy_id передавать ид монстра, а не порядковый номер в списке врагов
+вид атак (_hero_type_hit)
+1 = Быстрый удар
+2 = Уклонение
+3 = Парирование
+4 = Удар Призрака';
+
+/*
+	Функция, принимающая на вход цифры от 0.0 до 1.0.
+	В ответ выдает либо TRUE, либо FALSE.
+	Входной параметр - процент вероятности совершения события где 0.0 - событие никогда не произойдет , 1.0 - событие будет происходить всегда, 0.5 событие 	произойдет с вероятностью в 50%.
+*/
+
+create or replace function sotr_settings.get_random(_percent_in double precision)
+returns bool
+language plpgsql
+as $function$
+declare
+p_loss double precision;
+begin 
+	
+	if (_percent_in <= (0.0)::double precision ) then
+		return false;
+	elsif (_percent_in >= (1.0)::double precision ) then
+		return true;
+	end if;
+
+	select 1.0 / _percent_in into p_loss;
+	return (select 1 = ceil(random()*p_loss));
+
+end;
+$function$;
+
+
+--
+--Вызов
+--select generate_series(1,10), sotr_settings.get_random(0.4);
