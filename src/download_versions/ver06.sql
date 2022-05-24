@@ -138,13 +138,13 @@ values
 (2, 'Кулаки', '{"num": 1, "type": "weapon"}'::jsonb),
 (3, 'Стилет', '{"num": 1.3, "type": "weapon"}'::jsonb),
 (4, 'Кинжал Света', '{"num": 1.6, "type": "weapon"}'::jsonb),
-(5, 'Святой Меч', '{"num": 1.6, "type": "weapon", "ability": "Святость"}'::jsonb),
+(5, 'Святой Меч', '{"num": 1.6, "type": "weapon", "effect": "Святость"}'::jsonb),
 (6, 'Амулет Жизни', '{"num": 5, "type": "decoration", "effect": "Уклонение"}'::jsonb),
 (7, 'Аура Смерти', '{"num": 10, "type": "decoration", "effect": "Лечение"}'::jsonb),
-(8, 'Перчатка Азазеля', '{"num": 0, "type": "decoration", "ability": "Огонь"}'::jsonb),
+(8, 'Перчатка Азазеля', '{"num": 0, "type": "decoration", "effect": "Огонь"}'::jsonb),
 (9, 'Меч Истины', '{"num": 2, "type": "weapon"}'::jsonb),
-(10, 'Меч Каина', '{"num": 3, "type": "weapon", "ability": "Святость"}'::jsonb),
-(11, 'Маска Люцифера', '{"num": 0, "type": "decoration", "ability": "Godness"}'::jsonb);
+(10, 'Меч Каина', '{"num": 3, "type": "weapon", "effect": "Святость"}'::jsonb),
+(11, 'Маска Люцифера', '{"num": 0, "type": "decoration", "effect": "Godness"}'::jsonb);
 
 --select * from sotr_settings.items;
 
