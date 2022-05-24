@@ -1,29 +1,6 @@
 --VER 0.7
 --19:15 24.05.2022
 
-create schema sotr_game
-create schema sotr_settings
-create table sotr_settings.items
-create table sotr_settings.hero_state_lvl
-create table sotr_settings.enemy_list
-create table sotr_game.g_inventory
-create table sotr_game.g_hero
-create table sotr_game.g_enemy
-create or replace view sotr_game.v_game_statistic
-create table sotr_settings.game_statistic
-create table sotr_settings.attack_list
-
-insert into sotr_settings.items
-insert into sotr_settings.hero_state_lvl
-insert into sotr_settings.enemy_list
-insert into sotr_game.g_inventory
-insert into sotr_game.g_hero
-insert into sotr_settings.attack_list
-
-create or replace function sotr_game.start_game()
-CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
-CREATE OR REPLACE FUNCTION sotr_settings.get_hit(_enemy_id integer, _hero_type_hit integer)
-create or replace function sotr_settings.get_random(_percent_in double precision)
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
