@@ -1,4 +1,5 @@
---VER 0.6 10:45 24.05.2022
+--VER 0.6 
+--10:45 24.05.2022
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
