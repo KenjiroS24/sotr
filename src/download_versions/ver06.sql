@@ -1,5 +1,5 @@
 --VER 0.6 
---10:45 24.05.2022
+--11:56 24.05.2022
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
@@ -139,8 +139,8 @@ values
 (3, 'Стилет', '{"num": 1.3, "type": "weapon"}'::jsonb),
 (4, 'Кинжал Света', '{"num": 1.6, "type": "weapon"}'::jsonb),
 (5, 'Святой Меч', '{"num": 1.6, "type": "weapon", "ability": "Святость"}'::jsonb),
-(6, 'Амулет Жизни', '{"num": 5, "type": "decoration"}'::jsonb),
-(7, 'Аура Смерти', '{"num": 10, "type": "decoration"}'::jsonb),
+(6, 'Амулет Жизни', '{"num": 5, "type": "decoration", "effect": "Уклонение"}'::jsonb),
+(7, 'Аура Смерти', '{"num": 10, "type": "decoration", "effect": "Лечение"}'::jsonb),
 (8, 'Перчатка Азазеля', '{"num": 0, "type": "decoration", "ability": "Огонь"}'::jsonb),
 (9, 'Меч Истины', '{"num": 2, "type": "weapon"}'::jsonb),
 (10, 'Меч Каина', '{"num": 3, "type": "weapon", "ability": "Святость"}'::jsonb),
