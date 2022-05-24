@@ -199,7 +199,7 @@ values
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_game.g_hero (h_name, h_lvl, h_exp, h_heal_points, h_attack, h_agility, h_weapon, h_decoration) 
 values
-('Adrian', 1, 0, 200, 15, 0.01, null, null);
+('Adrian', 1, 0, 200, 15, 0.01, 2, null);
 
 --select * from sotr_game.g_hero;									
 									
