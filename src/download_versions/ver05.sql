@@ -1,4 +1,4 @@
---VER 0.5 16:45 23.05.2022
+--VER 0.6 10:45 24.05.2022
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
@@ -24,6 +24,7 @@ create table sotr_settings.hero_state_lvl (
 );
 
 COMMENT ON TABLE sotr_settings.hero_state_lvl IS 'Уровни и способности на уровнях';
+
 
 create table sotr_settings.enemy_list (
 	e_id int4 primary key,
@@ -146,6 +147,10 @@ values
 
 --select * from sotr_settings.items;
 
+/*select *, effect->>'num'
+	from sotr_settings.items
+where effect->>'type' = 'decoration';*/
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_settings.hero_state_lvl (lvl_id, "exp", heal_points, attack, agility) 
@@ -195,7 +200,7 @@ insert into sotr_game.g_hero (h_name, h_lvl, h_exp, h_heal_points, h_attack, h_a
 values
 ('Adrian', 1, 0, 200, 15, 0.01, null, null);
 
---select * from sotr_game.g_hero;							
+--select * from sotr_game.g_hero;									
 									
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -222,6 +227,47 @@ values
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+begin 
+
+	with en as (
+		select generate_series(1,_cnt), e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
+			from sotr_settings.enemy_list el
+		where e_id = _enemy_id
+	)
+	insert into sotr_game.g_enemy (e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
+		select e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
+			from en;
+
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_settings.create_enemy(int4, int4) IS 'Создание врагов. _enemy_id - Ид врага, _cnt - необходимое кол-во.';
+
+create or replace function sotr_settings.get_random(_percent_in double precision)
+returns bool
+language plpgsql
+as $function$
+declare
+p_loss double precision;
+begin 
+	
+	if (_percent_in <= (0.0)::double precision ) then
+		return false;
+	elsif (_percent_in >= (1.0)::double precision ) then
+		return true;
+	end if;
+
+	select 1.0 / _percent_in into p_loss;
+	return (select 1 = ceil(random()*p_loss));
+
+end;
+$function$;
 
 create or replace function sotr_game.start_game()
 returns text
@@ -266,51 +312,3 @@ begin
 
 end;
 $function$;
-
-CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
- RETURNS void
- LANGUAGE plpgsql
-AS $function$
-begin 
-
-	with en as (
-		select generate_series(1,_cnt), e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
-			from sotr_settings.enemy_list el
-		where e_id = _enemy_id
-	)
-	insert into sotr_game.g_enemy (e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
-		select e_name, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness 
-			from en;
-
-end;
-$function$
-;
-
-COMMENT ON FUNCTION sotr_settings.create_enemy(int4, int4) IS 'Создание врагов. _enemy_id - Ид врага, _cnt - необходимое кол-во.';
-
-/*
-	Функция, принимающая на вход цифры от 0.0 до 1.0.
-	В ответ выдает либо TRUE, либо FALSE.
-	Входной параметр - процент вероятности совершения события где 0.0 - событие никогда не произойдет , 1.0 - событие будет происходить всегда, 0.5 событие 	произойдет с вероятностью в 50%.
-*/
-
-create or replace function sotr_settings.get_random(_percent_in double precision)
-returns bool
-language plpgsql
-as $function$
-declare
-p_loss double precision;
-begin 
-	
-	if (_percent_in <= (0.0)::double precision ) then
-		return false;
-	elsif (_percent_in >= (1.0)::double precision ) then
-		return true;
-	end if;
-
-	select 1.0 / _percent_in into p_loss;
-	return (select 1 = ceil(random()*p_loss));
-
-end;
-$function$;
-
