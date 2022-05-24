@@ -56,19 +56,6 @@ begin
 		where in_items_id = 1;
 	end if;
 
-
-	/*if p_effect >= 0 then 
-		update sotr_game.g_hero 
-			set h_heal_points = h_heal_points + p_effect
-		where h_id = 1;
-	
-		update sotr_game.g_inventory 
-			set in_cnt = in_cnt - 1
-		where in_items_id = 1;
-	
-	else return 'У Вас закончилась Трава';
-	end if;*/
-	
 	return 'Ваше ХП повысилось на ' || p_effect;
 
 end;
