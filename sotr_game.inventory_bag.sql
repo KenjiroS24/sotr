@@ -11,7 +11,7 @@ p_effect	text;
 
 begin
 
-	if 	_inv = 0 then
+	if _inv = 0 then
 		return query
 		select gi.in_id || ': ' || i.i_title as inventory
 			from sotr_game.g_inventory gi
