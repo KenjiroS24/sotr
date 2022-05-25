@@ -27,20 +27,37 @@ begin
 		return query select 'Вы не можете использовать Траву в качестве оружия';
 
 	elseif p_type_inv = 'weapon' then
+		
+		with upd as (
+				select lvl.attack as att
+					from sotr_game.g_hero as h 
+				join sotr_settings.hero_state_lvl as lvl on lvl.lvl_id = h.h_lvl
+				where h.h_id = 1
+		)	
 		update sotr_game.g_hero
 			set h_weapon = p_items_id,
-				h_attack = h_attack * p_num_inv
+				h_attack = upd.att * p_num_inv
+			from upd
 		where h_id = 1;
 		return query select ('Оружие изменено на ' || p_inv_name);
 
 	elseif p_type_inv = 'decoration' and p_effect = 'Уклонение' then
+	
+		with upd as (
+				select lvl.agility  as ag
+					from sotr_game.g_hero as h 
+				join sotr_settings.hero_state_lvl as lvl on lvl.lvl_id = h.h_lvl
+				where h.h_id = 1
+		)		
 		update sotr_game.g_hero
 			set h_decoration = p_items_id,
-				h_agility = h_agility  + p_num_inv
+				h_agility = ag  * p_num_inv
+			from upd
 		where h_id = 1;
 		return query select ('Украшение изменено на ' || p_inv_name || '. ' || 'Ваша ловкость увеличилась.');
 
 	elseif p_type_inv = 'decoration' and p_effect != 'Уклонение' then
+		
 		update sotr_game.g_hero
 			set h_decoration = p_items_id
 		where h_id = 1;
@@ -51,7 +68,7 @@ begin
 			return query select 'С таким id оружия не существует';
 		end if;
 	end if;
-	
+
 end;
 $function$;
 
