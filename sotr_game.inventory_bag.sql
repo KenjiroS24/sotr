@@ -54,8 +54,6 @@ begin
 end;
 $function$;
 
-end;
-$function$;
 
 
 
