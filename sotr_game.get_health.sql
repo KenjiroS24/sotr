@@ -40,10 +40,16 @@ begin
 		update sotr_game.g_hero 
 			set h_heal_points = p_max_hp
 		where h_id = 1;
-	
+
 		update sotr_game.g_inventory 
 			set in_cnt = in_cnt - 1
-		where in_items_id = 1;
+		where in_items_id = 1
+		returning in_cnt into p_in_cnt;
+	
+		if p_in_cnt <= 0 then 
+			delete from sotr_game.g_inventory
+			where in_items_id = 1;
+		end if;
 	
 		return 'ХП повысилось до максимального значения. Ваше ХП составляет ' || p_max_hp;
 	
@@ -53,7 +59,14 @@ begin
 	
 		update sotr_game.g_inventory 
 			set in_cnt = in_cnt - 1
-		where in_items_id = 1;
+		where in_items_id = 1
+		returning in_cnt into p_in_cnt;
+		
+		if p_in_cnt <= 0 then 
+			delete from sotr_game.g_inventory
+			where in_items_id = 1;
+		end if;
+	
 	end if;
 
 	return 'Ваше ХП повысилось на ' || p_effect;
