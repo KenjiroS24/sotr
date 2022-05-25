@@ -46,11 +46,13 @@ begin
 		where h_id = 1;
 		return query select ('Украшение изменено на ' || p_inv_name || '. ');
 
-	end if;
-
 		if not found then
 			return query select 'С таким id оружия не существует';
 		end if;
+	end if;
+	
+end;
+$function$;
 
 end;
 $function$;
