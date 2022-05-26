@@ -1,12 +1,10 @@
-24.05.2022
-VER 0.7
+26.05.2022
+VER 0.8
 
 **В данный момент скрипт содержит:**
 create schema sotr_game
 create schema sotr_settings
 
-create schema sotr_game
-create schema sotr_settings
 create table sotr_settings.items
 create table sotr_settings.hero_state_lvl
 create table sotr_settings.enemy_list
@@ -24,6 +22,8 @@ insert into sotr_game.g_inventory
 insert into sotr_game.g_hero
 insert into sotr_settings.attack_list
 
+CREATE OR REPLACE FUNCTION sotr_game.get_health()
+CREATE OR REPLACE FUNCTION sotr_game.get_health()
 create or replace function sotr_game.start_game()
 CREATE OR REPLACE FUNCTION sotr_settings.create_enemy(_enemy_id integer, _cnt integer)
 CREATE OR REPLACE FUNCTION sotr_settings.get_hit(_enemy_id integer, _hero_type_hit integer)
