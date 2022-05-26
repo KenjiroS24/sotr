@@ -54,11 +54,12 @@ create table sotr_settings.enemy_list (
 COMMENT ON TABLE sotr_settings.enemy_list IS 'Список всех врагов';
 
 
-create table sotr_game.g_inventory (
-	in_id int4 NOT null GENERATED ALWAYS as IDENTITY,
+CREATE TABLE sotr_game.g_inventory (
+	in_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	in_items_id int4 NULL,
 	in_cnt int4 NULL,
 	CONSTRAINT inventory_pkey PRIMARY KEY (in_id),
+	CONSTRAINT un_in_items_id UNIQUE (in_items_id),
 	CONSTRAINT inventory_in_items_id_fkey FOREIGN KEY (in_items_id) REFERENCES sotr_settings.items(i_id)
 );
 
