@@ -38,6 +38,12 @@ begin
 	where h_id = 1
 	returning h_lvl, h_exp into p_hero_lvl_now, p_e_exp;
 
+	--Обновление статистики
+	update sotr_settings.game_statistic 
+		set cnt_kill_enemy = cnt_kill_enemy + 1,
+			cnt_received_exp = cnt_received_exp + p_e_exp
+	where not game_completed;
+
 	--Переменная для проверки соответствия уровня и EXP
 	select hsl.lvl_id into p_hero_lvl_must
 		from sotr_settings.hero_state_lvl as hsl 
