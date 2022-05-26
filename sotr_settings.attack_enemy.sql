@@ -114,13 +114,14 @@ begin
 	p_enemy_type_hit = 'Враг применил прием: [' || p_enemy_type_hit || ']. Урон: ';
 	p_res = p_res || jsonb_build_object(p_enemy_type_hit, p_hit_point_enemy);
 
-	p_show_heal_points_hero = p_heal_points_hero::text || '/' || p_hero_max_hp::text;
-	p_res = p_res || jsonb_build_object('У вас осталось HP: ', p_show_heal_points_hero);
-
-/*	if p_heal_points_hero <= 0 then
-		вызов функции убийства глав.героя, возврат к сейвпоинту
-		return
-	end if;*/
+	--Смерть героя
+	if p_heal_points_hero <= 0 then
+--		вызов функции убийства глав.героя, возврат к сейвпоинту
+		return jsonb_build_object('Вам нанесли смертельное ранение.','[Игра вернулась к контрольной точке]');
+	else	
+		p_show_heal_points_hero = p_heal_points_hero::text || '/' || p_hero_max_hp::text;
+		p_res = p_res || jsonb_build_object('У вас осталось HP: ', p_show_heal_points_hero);
+	end if;
 
 	p_total_result = coalesce(p_total_result, jsonb_build_object()) || p_res;
 
