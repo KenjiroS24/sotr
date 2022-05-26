@@ -1,5 +1,5 @@
---VER 0.7
---19:15 24.05.2022
+--VER 0.8
+--12:45 26.05.2022
 
 
 drop schema if exists sotr_game cascade;
@@ -133,7 +133,6 @@ create table sotr_settings.attack_list (
 
 COMMENT ON TABLE sotr_settings.attack_list IS 'Виды атак';
 
-
 insert into sotr_settings.items (i_id, i_title, effect) 
 values
 (1, 'Травы', '{"num": 30, "type": "heal"}'::jsonb),
@@ -148,14 +147,6 @@ values
 (10, 'Меч Каина', '{"num": 3, "type": "weapon", "effect": "Святость"}'::jsonb),
 (11, 'Маска Люцифера', '{"num": 0, "type": "decoration", "effect": "Godness"}'::jsonb);
 
---select * from sotr_settings.items;
-
-/*select *, effect->>'num'
-	from sotr_settings.items
-where effect->>'type' = 'decoration';*/
-
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_settings.hero_state_lvl (lvl_id, "exp", heal_points, attack, agility) 
 values
 (1, 0, 200, 15, 0.01),
@@ -169,9 +160,6 @@ values
 (9, 7000, 1500, 85, 0.2),
 (10, 9000, 2500, 120, 0.3);
 
---select * from sotr_settings.hero_state_lvl;
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_settings.enemy_list (e_id, e_name, e_description, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
 values									
 (1, 'Зомби', '- бывший охотник на нечисть, убитый в бою, но воскресший Некромантом для служения силам тьмы.', 'Замок', 30, 35, 10, 3, 0.4, null),
@@ -189,24 +177,14 @@ values
 (13, 'Рыцарь Ада (Босс)', '- генерал армии Люцифера, легенды гласят, что под броней скрывается первый человек, совершивший убийство родного брата.', 'Адские врата', 10000, 800, 40, 10, 1, null),
 (14, 'Люцифер (Секретный Босс)', '- король Ада и властитель темных сил. Бывший Ангел Рая.', '9-й круг ада', 0, 6666, 666, 11, 1, null);
 
---select * from sotr_settings.enemy_list;
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_game.g_inventory (in_items_id, in_cnt) 
 values
 (2, 1);
 
---select * from sotr_game.g_inventory;
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_game.g_hero (h_name, h_lvl, h_exp, h_heal_points, h_attack, h_agility, h_weapon, h_decoration) 
 values
 ('Adrian', 1, 0, 200, 15, 0.01, 2, null);
-
---select * from sotr_game.g_hero;									
 									
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
 insert into sotr_settings.attack_list (att_id, enemy_attack, hero_attack, effect) 
 values
 (1, 'Промах', 'Быстрый удар', 'Герой наносит удар'),
@@ -226,10 +204,162 @@ values
 (15, 'Быстрый удар', 'Парирование', 'Урон врага делится на 2'),
 (16, 'Быстрый удар', 'Удар Призрака', 'Без изменений');
 
---select * from sotr_settings.attack_list;
+CREATE OR REPLACE FUNCTION sotr_game.get_health()
+ RETURNS text
+ LANGUAGE plpgsql
+AS $function$
+declare 
+p_res 		text;
+p_in_cnt	int4;
+p_effect	int4;
+p_max_hp	int4;
+p_now_hp	int4;
 
-------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
+begin
+	
+	--Проверка наличия инвентаря с heal
+	select gi.in_cnt into p_in_cnt 
+		from sotr_game.g_inventory as gi 
+	where in_items_id = 1;
+	if not found then 
+		return  'У Вас нет Трав в инвентаре';
+	end if;
+
+	--Назначение очков хилла
+	select (i.effect ->> 'num')::int4 into p_effect
+		from sotr_settings.items i
+	where i_id = 1;
+	
+	--Проверка предела ХП
+	select hsl.heal_points as hhp, gh.h_heal_points as ghhp into p_max_hp, p_now_hp
+		from sotr_settings.hero_state_lvl hsl 
+		join sotr_game.g_hero gh on hsl.lvl_id = gh.h_lvl;
+
+	--Если текущий уровень здоровья равен максимальному, ничего не делать
+	if p_now_hp = p_max_hp then 
+		p_res = 'Персонаж не нуждается в лечении.';
+	--Если после прибавления очков ХП будет достигнут или преодолен предел ХП, уровень ХП обновится на свой максимум и не выше
+	elseif p_now_hp + p_effect >= p_max_hp then 
+		update sotr_game.g_hero 
+			set h_heal_points = p_max_hp
+		where h_id = 1;
+
+		update sotr_game.g_inventory 
+			set in_cnt = in_cnt - 1
+		where in_items_id = 1
+		returning in_cnt into p_in_cnt;
+	
+		p_res = 'ХП повысилось до максимального значения. Ваше ХП составляет [' || p_max_hp::text || '/' || p_max_hp::text || ']';
+	else 
+		update sotr_game.g_hero 
+			set h_heal_points = h_heal_points + p_effect
+		where h_id = 1
+		returning h_heal_points into p_now_hp;
+	
+		update sotr_game.g_inventory 
+			set in_cnt = in_cnt - 1
+		where in_items_id = 1
+		returning in_cnt into p_in_cnt;
+		
+		p_res = 'Ваше ХП повысилось на [' || p_effect || ']. Ваше ХП составляет [' || p_now_hp::text || '/' || p_max_hp::text || ']';
+	end if;
+
+	if p_in_cnt <= 0 then 
+		delete from sotr_game.g_inventory
+		where in_items_id = 1;
+	end if;
+
+	return p_res;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION sotr_game.inventory_bag (_inv bigint default 0)
+ RETURNS setof text
+ LANGUAGE plpgsql
+AS $function$
+declare
+p_inv_name	text;
+p_items_id	int4;
+p_num_inv	numeric;
+p_type_inv	text;
+p_effect	text;
+
+begin
+	--Выводим список инвентаря, если _inv = 0 
+	if _inv = 0 then
+		return query 
+		select gi.in_id || ': ' || i.i_title || case when gi.in_cnt > 1 then '. Кол-во: ' || gi.in_cnt else '' end as inventory
+			from sotr_game.g_inventory as gi
+			join sotr_settings.items as i on gi.in_items_id = i.i_id;
+	else 
+	--Записываем значения in_items_id, i_title, num, type, effect для последующих выражений и проверяем корректность id
+		select gi.in_items_id,  i.i_title , (i.effect->> 'num')::numeric  as num, (i.effect ->>'type') as "type",  (i.effect ->>'effect') as effect into p_items_id, p_inv_name, p_num_inv, p_type_inv, p_effect
+			from sotr_game.g_inventory gi
+			join sotr_settings.items i on i.i_id = gi.in_items_id
+		where gi.in_id = _inv;
+		if not found then
+			RAISE EXCEPTION 'В инвентаре нет предмета с ID [%].', $1;
+		end if;
+	end if;
+
+	--Если тип инвентаря heal, то функция обрывается
+	if p_type_inv = 'heal' then
+		return query select 'Вы не можете использовать Траву в качестве оружия';
+
+	--Если тип инвентаря weapon , тогда мы обновляем в таблице g_hero значения h_weapon, h_attack
+	elseif p_type_inv = 'weapon' then
+
+		with upd as (
+				select lvl.attack as att
+					from sotr_game.g_hero as h
+				join sotr_settings.hero_state_lvl as lvl on lvl.lvl_id = h.h_lvl
+				where h.h_id = 1
+		)
+		update sotr_game.g_hero
+			set h_weapon = p_items_id,
+				h_attack = upd.att * p_num_inv
+			from upd
+		where h_id = 1;
+		return query select ('Оружие изменено на [' || p_inv_name || '].');
+
+	--Если тип инвентаря decoration с эффектом Уклонение, в таблице g_hero обновляем значения h_decoration и h_agility
+	elseif p_type_inv = 'decoration' and p_effect = 'Уклонение' then
+
+		with upd as (
+				select lvl.agility  as ag
+					from sotr_game.g_hero as h
+				join sotr_settings.hero_state_lvl as lvl on lvl.lvl_id = h.h_lvl
+				where h.h_id = 1
+		)
+		update sotr_game.g_hero
+			set h_decoration = p_items_id,
+				h_agility = upd.ag  + (p_num_inv/100)
+			from upd
+		where h_id = 1;
+		return query select ('Украшение изменено на [' || p_inv_name || ']. Ваша ловкость увеличилась.');
+
+	--Если тип инвентаря decoration без эффекта Уклонение, в таблице g_hero обновляем значения h_decoration и исходный h_agility в соответствии с уровнем героя
+	elseif p_type_inv = 'decoration' and p_effect != 'Уклонение' then
+
+		with upd as (
+				select lvl.agility  as ag
+					from sotr_game.g_hero as h
+				join sotr_settings.hero_state_lvl as lvl on lvl.lvl_id = h.h_lvl
+				where h.h_id = 1
+		)
+		update sotr_game.g_hero
+			set h_decoration = p_items_id,
+				h_agility = upd.ag
+			from upd
+		where h_id = 1;
+		return query select ('Украшение изменено на [' || p_inv_name || '].');
+
+	end if;
+
+end;
+$function$;
+
 
 create or replace function sotr_game.start_game()
 returns text
@@ -295,6 +425,7 @@ $function$
 ;
 
 COMMENT ON FUNCTION sotr_settings.create_enemy(int4, int4) IS 'Создание врагов. _enemy_id - Ид врага, _cnt - необходимое кол-во.';
+
 
 CREATE OR REPLACE FUNCTION sotr_settings.get_hit(_enemy_id integer, _hero_type_hit integer)
  RETURNS jsonb
@@ -431,12 +562,6 @@ COMMENT ON FUNCTION sotr_settings.get_hit(int4, int4) IS 'в _enemy_id пере�
 3 = Парирование
 4 = Удар Призрака';
 
-/*
-	Функция, принимающая на вход цифры от 0.0 до 1.0.
-	В ответ выдает либо TRUE, либо FALSE.
-	Входной параметр - процент вероятности совершения события где 0.0 - событие никогда не произойдет , 1.0 - событие будет происходить всегда, 0.5 событие 	произойдет с вероятностью в 50%.
-*/
-
 create or replace function sotr_settings.get_random(_percent_in double precision)
 returns bool
 language plpgsql
@@ -456,8 +581,3 @@ begin
 
 end;
 $function$;
-
-
---
---Вызов
---select generate_series(1,10), sotr_settings.get_random(0.4);
