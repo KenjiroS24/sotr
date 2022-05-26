@@ -13,8 +13,8 @@ begin
 	--Выводим список инвентаря, если _inv = 0 
 	if _inv = 0 then
 		return query 
-		select gi.in_id || ': ' || i.i_title as inventory
-			from sotr_game.g_inventory gi
+		select gi.in_id || ': ' || i.i_title || case when gi.in_cnt > 1 then '. Кол-во: ' || gi.in_cnt else '' end as inventory
+			from sotr_game.g_inventory as gi
 			join sotr_settings.items as i on gi.in_items_id = i.i_id;
 	else 
 	--Записываем значения in_items_id, i_title, num, type, effect для последующих выражений и проверяем корректность id
@@ -22,9 +22,9 @@ begin
 			from sotr_game.g_inventory gi
 			join sotr_settings.items i on i.i_id = gi.in_items_id
 		where gi.in_id = _inv;
-			if not found then
-				RAISE EXCEPTION 'С id % оружия не существует.', $1;
-			end if;
+		if not found then
+			RAISE EXCEPTION 'В инвентаре нет предмета с ID [%].', $1;
+		end if;
 	end if;
 
 	--Если тип инвентаря heal, то функция обрывается
@@ -45,7 +45,7 @@ begin
 				h_attack = upd.att * p_num_inv
 			from upd
 		where h_id = 1;
-		return query select ('Оружие изменено на ' || p_inv_name);
+		return query select ('Оружие изменено на [' || p_inv_name || '].');
 
 	--Если тип инвентаря decoration с эффектом Уклонение, в таблице g_hero обновляем значения h_decoration и h_agility
 	elseif p_type_inv = 'decoration' and p_effect = 'Уклонение' then
@@ -61,7 +61,7 @@ begin
 				h_agility = upd.ag  + (p_num_inv/100)
 			from upd
 		where h_id = 1;
-		return query select ('Украшение изменено на ' || p_inv_name || '. ' || 'Ваша ловкость увеличилась.');
+		return query select ('Украшение изменено на [' || p_inv_name || ']. Ваша ловкость увеличилась.');
 
 	--Если тип инвентаря decoration без эффекта Уклонение, в таблице g_hero обновляем значения h_decoration и исходный h_agility в соответствии с уровнем героя
 	elseif p_type_inv = 'decoration' and p_effect != 'Уклонение' then
@@ -77,21 +77,9 @@ begin
 				h_agility = upd.ag
 			from upd
 		where h_id = 1;
-		return query select ('Украшение изменено на ' || p_inv_name || '. ');
+		return query select ('Украшение изменено на [' || p_inv_name || '].');
 
 	end if;
 
 end;
 $function$;
-
-
-
-
-
-/*insert into sotr_game.g_inventory (in_items_id, in_cnt)
-values 
-(1, 1),
-(4, 1),
-(6, 1),
-(8, 1);
-select sotr_game.inventory_bag ();*/
