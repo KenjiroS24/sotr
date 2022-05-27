@@ -11,7 +11,6 @@ p_num_w				numeric;		--Множитель оружия
 p_type_w			text;			--Тип оружия
 p_effect_w			text;			--Эффект оружия
 p_num_d				numeric;		--Множитель украшения
-p_type_d			text;			--Тип украшения
 p_effect_d			text;			--Эффект украшения
 
 
@@ -28,7 +27,7 @@ begin
 		join sotr_settings.items i on i.i_id = gh.h_weapon
 	where gh.h_id = 1;
 
-	select gh.h_decoration, (i.effect->> 'num')::numeric  as num_d, (i.effect ->>'type') as "type_d",  (i.effect ->>'effect') as effect_d into p_h_decoration, p_num_d, p_type_d, p_effect_d
+	select gh.h_decoration, (i.effect->> 'num')::numeric  as num_d, (i.effect ->>'type') as "type_d",  (i.effect ->>'effect') as effect_d into p_h_decoration, p_num_d, p_effect_d
 		from sotr_game.g_hero gh 
 		join sotr_settings.items i on i.i_id = gh.h_decoration
 	where gh.h_id = 1;
@@ -57,7 +56,7 @@ begin
 		end if; 
 	
 			--Если тип инвентаря decoration с эффектом Уклонение, в таблице g_hero обновляем значения h_decoration и h_agility
-			if p_h_decoration is not null and p_type_d = 'decoration' and p_effect_d = 'Уклонение' then
+			if p_h_decoration is not null and p_effect_d = 'Уклонение' then
 				with upd as (
 					select lvl.agility  as ag
 						from sotr_game.g_hero as h
