@@ -6,7 +6,7 @@ declare
 p_exp				int4;			--Необходимый опыт для прохождения уровня
 p_h_exp				int4;			--Текущий опыт героя	
 p_h_weapon			int4;			--Оружие героя
-p_h_decoration		int4;			--Украшение героя
+p_h_decoration			int4;			--Украшение героя
 p_num_w				numeric;		--Множитель оружия
 p_type_w			text;			--Тип оружия
 p_effect_w			text;			--Эффект оружия
