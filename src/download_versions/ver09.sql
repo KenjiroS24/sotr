@@ -758,7 +758,7 @@ begin
 		update sotr_game.g_hero 
 			set h_lvl = _lvl_id,
 --				h_heal_points = p_state_lvl.heal_points, --Нужно подумать над частичным восстановление после повышения ХП
-				h_attack = p_state_lvl.attack * (p_current_weapon->>'num')::int,
+				h_attack = (p_state_lvl.attack * (p_current_weapon->>'num')::float)::int,
 				h_agility = case 
 								when p_current_decoration->>'effect' = 'Уклонение' then p_state_lvl.agility + ((p_current_decoration->>'num')::float/100.0)
 								else p_state_lvl.agility end
