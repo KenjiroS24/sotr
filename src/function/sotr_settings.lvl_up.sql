@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sotr_game.lvl_up(_lvl_id integer)
+CREATE OR REPLACE FUNCTION sotr_settings.lvl_up(_lvl_id integer)
  RETURNS jsonb
  LANGUAGE plpgsql
 AS $function$
