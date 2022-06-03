@@ -54,6 +54,7 @@ begin
 	if p_hero_lvl_now != p_hero_lvl_must then
 		--повысить лвл
 		--Вызов функции с передачей лвл на который надо поднять перса p_hero_lvl_must
+		perform sotr_settings.lvl_up(p_hero_lvl_must);
 		p_res_drop = coalesce(p_res_drop, jsonb_build_object()) || jsonb_build_object('Вы перешли на новый уровень: ', p_hero_lvl_must);
 	end if;
 
