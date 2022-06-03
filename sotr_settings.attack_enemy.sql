@@ -8,6 +8,7 @@ select key as Actions, value->>0 as cnt
 ;
 */
 
+
 CREATE OR REPLACE FUNCTION sotr_game.attack_enemy(_enemy_id integer, _hero_type_hit integer)
  RETURNS jsonb
  LANGUAGE plpgsql
