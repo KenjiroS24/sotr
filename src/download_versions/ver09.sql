@@ -1,5 +1,5 @@
---VER 0.8
---12:45 26.05.2022
+--VER 0.9
+--11:45 03.06.2022
 
 
 drop schema if exists sotr_game cascade;
@@ -579,6 +579,264 @@ begin
 
 	select 1.0 / _percent_in into p_loss;
 	return (select 1 = ceil(random()*p_loss));
+
+end;
+$function$;
+
+
+CREATE OR REPLACE FUNCTION sotr_game.attack_enemy(_enemy_id integer, _hero_type_hit integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+declare
+p_total_result jsonb;
+p_res jsonb;
+p_request_get_hit jsonb;
+p_res_drop jsonb;
+
+p_glob_enemy_id int;
+p_weakness_enemy varchar;
+p_loss_weakness float;
+
+p_info_about_effect jsonb;
+p_hero_type_hit varchar;
+p_enemy_type_hit varchar;
+p_hit_point_hero int;
+p_hit_point_enemy int;
+
+p_h_lvl int;
+p_hero_max_hp int;
+p_enemy_max_hp int;
+p_heal_hero int;
+
+p_heal_points_enemy int;
+p_heal_points_hero int;
+p_show_heal_points_enemy text;
+p_show_heal_points_hero text;
+
+begin
+
+	--Получение эффекта слабости врага и его глобальный ID (из листа врагов для передачи в get_hit)
+	select el.e_id, el.e_weakness->>'weakness', (el.e_weakness->>'num')::float, el.e_heal_points into p_glob_enemy_id, p_weakness_enemy, p_loss_weakness, p_enemy_max_hp
+		from sotr_game.g_enemy as ge
+		join sotr_settings.enemy_list as el on el.e_name = ge.e_name
+	where ge.e_id = _enemy_id;
+	if not found then
+		return jsonb_build_object('ERROR','Врага с таким ID не найдено');
+	end if;
+
+	--Получение эффекта оружия героя
+	select gh.h_lvl, jsonb_build_object('weapon_effect', i.effect) || jsonb_build_object('decoration_effect', i2.effect) into p_h_lvl, p_info_about_effect
+		from sotr_game.g_hero as gh
+		left join sotr_settings.items as i on i.i_id = gh.h_weapon
+		left join sotr_settings.items as i2 on i2.i_id = gh.h_decoration
+	where gh.h_id = 1;
+
+	--назначение пределов ХП для героя
+	select heal_points into p_hero_max_hp
+		from sotr_settings.hero_state_lvl as hsl where lvl_id = p_h_lvl;
+
+	--Вызов функции, которая вернет тип атаки врага + очки урона героя и врага
+	select sotr_settings.get_hit(p_glob_enemy_id, _hero_type_hit) into p_request_get_hit;
+	--Распределение по переменным итога вызова функции выше
+	select p_request_get_hit->>'hero_type_hit' into p_hero_type_hit;
+	select p_request_get_hit->>'enemy_type_hit' into p_enemy_type_hit;
+	select (p_request_get_hit->>'hit_point_hero')::int into p_hit_point_hero;
+	select (p_request_get_hit->>'hit_point_enemy')::int into p_hit_point_enemy;
+
+	--Проверка на наличие слабости у врага и наличию эффекта у оружия глав.героя
+	if (p_info_about_effect->'weapon_effect'->>'effect' = p_weakness_enemy) or (p_info_about_effect->'decoration_effect'->>'effect' = p_weakness_enemy) then
+		p_hit_point_hero = p_hit_point_hero * p_loss_weakness;
+	
+		p_total_result = jsonb_build_object('Сработал эффект [Усиление]:', p_loss_weakness);
+	end if;
+
+	--Нанесение урона врагу
+	update sotr_game.g_enemy as ge
+		set e_heal_points = e_heal_points - p_hit_point_hero
+	where ge.e_id = _enemy_id
+	returning e_heal_points into p_heal_points_enemy;
+
+	p_hero_type_hit	= 'Вы применили прием: [' || p_hero_type_hit || ']. Урон: ';
+	p_res = jsonb_build_object(p_hero_type_hit, p_hit_point_hero);
+	
+	--вызов функции дропа-убийства, возврат из неё предмета и инфы кого убили, получение exp, повысился ли уровень?
+	if p_heal_points_enemy <= 0 then
+		select sotr_settings.kill_enemy(_enemy_id) into p_res_drop;
+--		p_heal_points_enemy = 0;
+		p_res = p_res || p_res_drop;
+	else 
+		p_show_heal_points_enemy = p_heal_points_enemy::text || '/' || p_enemy_max_hp::text;
+		p_res = p_res || jsonb_build_object('Остаток жизни врага: ', p_show_heal_points_enemy);	
+	end if;
+
+	--Проверка на эффект Лечение
+	if p_info_about_effect->'decoration_effect'->>'effect' = 'Лечение' then
+		p_heal_hero = (select p_hit_point_hero * (p_info_about_effect->'decoration_effect'->>'num')::float / 100);
+	
+		update sotr_game.g_hero as gh
+			set h_heal_points = case when (h_heal_points + p_heal_hero) > p_hero_max_hp then p_hero_max_hp else h_heal_points + p_heal_hero end
+		where gh.h_id = 1;
+	
+		p_total_result = coalesce(p_total_result, jsonb_build_object()) || jsonb_build_object('Сработал эффект [Лечение]. Восстановлено HP: ', p_heal_hero);
+	end if;
+
+	--Нанесение урона герою
+	update sotr_game.g_hero as gh
+		set h_heal_points = h_heal_points - p_hit_point_enemy
+	where gh.h_id = 1
+	returning h_heal_points into p_heal_points_hero;
+
+	p_enemy_type_hit = 'Враг применил прием: [' || p_enemy_type_hit || ']. Урон: ';
+	p_res = p_res || jsonb_build_object(p_enemy_type_hit, p_hit_point_enemy);
+
+	--Смерть героя
+	if p_heal_points_hero <= 0 then
+--		вызов функции убийства глав.героя, возврат к сейвпоинту. Временно прописал обнуление результатов
+		truncate sotr_game.g_enemy restart identity;
+		truncate sotr_game.g_inventory restart identity;
+		truncate sotr_settings.game_statistic restart identity;
+	
+		insert into sotr_game.g_inventory (in_items_id, in_cnt) values (2, 1);
+		update sotr_game.g_hero
+			set h_lvl = 1, h_exp = 0, h_heal_points = 200, h_attack = 15, h_agility = 0.01, h_weapon = 2, h_decoration = null
+		where h_id = 1;
+		insert into sotr_settings.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed) values (0, 0, false);
+		perform sotr_game.start_game();
+		return jsonb_build_object('Вам нанесли смертельное ранение.','[Игра вернулась к контрольной точке]');
+	else	
+		p_show_heal_points_hero = p_heal_points_hero::text || '/' || p_hero_max_hp::text;
+		p_res = p_res || jsonb_build_object('У вас осталось HP: ', p_show_heal_points_hero);
+	end if;
+
+	p_total_result = coalesce(p_total_result, jsonb_build_object()) || p_res;
+
+	return p_total_result;
+
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_game.attack_enemy(int4, int4) IS 'Функцию по нанесению урона врагу. В _enemy_id берется враг под номером из таблицы g_enemy.
+В _hero_type_hit принимаются 4 аргумента:
+1 = Быстрый удар
+2 = Уклонение
+3 = Парирование
+4 = Удар Призрака';
+
+
+
+
+
+CREATE OR REPLACE FUNCTION sotr_settings.lvl_up(_lvl_id integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+declare 
+p_state_lvl record;
+p_current_exp int;
+p_current_lvl int;
+p_current_weapon jsonb;
+p_current_decoration jsonb;
+
+begin 
+		
+	--Записываем данные нового уровня
+	select hsl.* into p_state_lvl
+		from sotr_settings.hero_state_lvl as hsl
+	where lvl_id = _lvl_id;
+
+	--Записываем данные героя в текущей сессии
+	select gh.h_exp, gh.h_lvl, iwep.effect, idec.effect into p_current_exp, p_current_lvl, p_current_weapon, p_current_decoration
+		from sotr_game.g_hero as gh
+		join sotr_settings.items as iwep on iwep.i_id = gh.h_weapon
+		left join sotr_settings.items as idec on idec.i_id = gh.h_decoration
+	where gh.h_id = 1;
+
+	--Если текущий опыт больше или равен необходимому минимуму, тогда обновляем уровень в g_hero 
+	if p_current_exp >= p_state_lvl."exp" then 
+		update sotr_game.g_hero 
+			set h_lvl = _lvl_id,
+--				h_heal_points = p_state_lvl.heal_points, --Нужно подумать над частичным восстановление после повышения ХП
+				h_attack = p_state_lvl.attack * (p_current_weapon->>'num')::int,
+				h_agility = case 
+								when p_current_decoration->>'effect' = 'Уклонение' then p_state_lvl.agility + ((p_current_decoration->>'num')::float/100.0)
+								else p_state_lvl.agility end
+		where h_id = 1;
+	
+		return jsonb_build_object('Ваш уровень повысился до ', _lvl_id);
+	end if;
+	return jsonb_build_object('Ошибка: ', 'Недостаточно EXP');
+
+end;
+$function$
+;
+
+
+CREATE OR REPLACE FUNCTION sotr_settings.kill_enemy(_enemy_id integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+declare
+p_res_drop jsonb;
+p_e_name varchar; 
+p_e_exp int;
+p_e_drop_items int;
+p_e_chance_drop float;
+p_get_drop_items varchar;
+p_hero_lvl_now int;
+p_hero_lvl_must int;
+
+begin
+	
+	delete from sotr_game.g_enemy as ge
+		where ge.e_id = _enemy_id
+	returning e_name, e_exp, e_drop_items, e_chance_drop into p_e_name, p_e_exp, p_e_drop_items, p_e_chance_drop;
+
+	--Проверка на дроп
+	if (select sotr_settings.get_random(p_e_chance_drop)) then
+		insert into sotr_game.g_inventory (in_items_id, in_cnt) 
+			values 
+		(p_e_drop_items, 1)
+		on conflict (in_items_id) do update
+			set in_cnt = excluded.in_cnt + 1;
+		
+		p_get_drop_items = (select i_title from sotr_settings.items where i_id = p_e_drop_items);
+		p_res_drop = jsonb_build_object('Выбитое оружие: ', p_get_drop_items);
+	else
+		p_res_drop = jsonb_build_object();
+	end if;
+
+	--Добавление EXP
+	update sotr_game.g_hero as gh
+		set h_exp = h_exp + p_e_exp
+	where h_id = 1
+	returning h_lvl, h_exp into p_hero_lvl_now, p_e_exp;
+
+	--Обновление статистики
+	update sotr_settings.game_statistic 
+		set cnt_kill_enemy = cnt_kill_enemy + 1,
+			cnt_received_exp = cnt_received_exp + p_e_exp
+	where not game_completed;
+
+	--Переменная для проверки соответствия уровня и EXP
+	select hsl.lvl_id into p_hero_lvl_must
+		from sotr_settings.hero_state_lvl as hsl 
+	where hsl.exp <= p_e_exp
+	order by hsl.lvl_id desc limit 1;
+
+	--Проверка и повышение ЛВЛа
+	if p_hero_lvl_now != p_hero_lvl_must then
+		--повысить лвл
+		--Вызов функции с передачей лвл на который надо поднять перса p_hero_lvl_must
+		perform sotr_settings.lvl_up(p_hero_lvl_must);
+		p_res_drop = coalesce(p_res_drop, jsonb_build_object()) || jsonb_build_object('Вы перешли на новый уровень: ', p_hero_lvl_must);
+	end if;
+
+
+	p_res_drop = coalesce(p_res_drop, jsonb_build_object()) || jsonb_build_object('Вы убили врага: ', p_e_name);
+	
+	return p_res_drop;
 
 end;
 $function$;
