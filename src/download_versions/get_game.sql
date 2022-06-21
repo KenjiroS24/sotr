@@ -1,4 +1,4 @@
---Let's Go SOTR 0.9
+--Let's Go SOTR 1.0.1
 
 /* Пример вызова
 select jsonb_array_elements(sotr_game.attack_enemy(20,1));
@@ -29,13 +29,26 @@ select sotr_game.start_game();
 3. Если в инвентаре есть лечилки, можно пополнить свой запас HP функцией get_health
 */
 
+--Состояние героя
+select * from sotr_game.g_hero gh;
+--Состояние врагов
+select * from sotr_game.g_enemy ge order by e_id;
 
+
+--Произвести атаку
 select key as Actions, value->>0 as cnt 
 	from jsonb_each
-(sotr_game.attack_enemy(1,1))
+(sotr_game.attack_enemy(12,4))
 --order by key
 ;
+--Посмотреть лист атак
+select * from sotr_settings.attack_list as al;
 
+
+--Проверить инвентарь
+select sotr_game.inventory_bag(2);
+--Вылечиться
 select sotr_game.get_health();
 
-select sotr_game.inventory_bag();
+
+
