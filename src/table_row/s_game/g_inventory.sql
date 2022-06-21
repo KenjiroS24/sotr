@@ -6,3 +6,7 @@ CREATE TABLE sotr_game.g_inventory (
 	CONSTRAINT un_in_items_id UNIQUE (in_items_id)
 );
 COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря в текущей сессии';
+
+insert into sotr_game.g_inventory (in_items_id, in_cnt) 
+values
+(2, 1);
