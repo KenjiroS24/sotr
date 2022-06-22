@@ -1,13 +1,17 @@
 --VER 1.0.1
---11:45 21.06.2022
+--15:30 22.06.2022
 
 --------------------------------------------
 
 drop schema if exists sotr_game cascade;
 drop schema if exists sotr_settings cascade;
+drop schema if exists sotr_rec cascade;
+
+
 
 create schema sotr_game;
 create schema sotr_settings;
+create schema sotr_rec;
 
 --------------------------------------------
 CREATE TABLE sotr_game.g_enemy (
@@ -55,6 +59,21 @@ COMMENT ON TABLE sotr_game.g_inventory IS 'Состояние инвентаря
 insert into sotr_game.g_inventory (in_items_id, in_cnt) 
 values
 (2, 1);
+
+CREATE TABLE sotr_game.game_statistic (
+	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	cnt_kill_enemy int4 NULL,
+	cnt_received_exp int4 NULL,
+	game_completed bool NULL,
+	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
+);
+
+COMMENT ON TABLE sotr_game.game_statistic IS 'Статистика игры';
+
+COMMENT ON COLUMN sotr_game.game_statistic.num_walkthrough IS 'номер прохождения';
+COMMENT ON COLUMN sotr_game.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
+COMMENT ON COLUMN sotr_game.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
+COMMENT ON COLUMN sotr_game.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
 
 CREATE TABLE sotr_settings.attack_list (
 	att_id int4 NOT NULL,
@@ -116,22 +135,6 @@ VALUES(15, 'Быстрый удар', '% оставшийся. Примерно 
 INSERT INTO sotr_settings.attack_list
 (att_id, enemy_attack, chance_enemy_attack, hero_attack, effect)
 VALUES(16, 'Быстрый удар', '% оставшийся. Примерно 70-80%', 'Удар Призрака', 'Без изменений');
-
-CREATE TABLE sotr_settings.game_statistic (
-	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY, -- номер прохождения
-	cnt_kill_enemy int4 NULL, -- кол-во убитых врагов в прохождении
-	cnt_received_exp int4 NULL, -- кол-во полученной экспы
-	game_completed bool NULL, -- игра пройдена? Если убит Рыцарь Ада, то да
-	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
-);
-COMMENT ON TABLE sotr_settings.game_statistic IS 'Статистика игры';
-
--- Column comments
-
-COMMENT ON COLUMN sotr_settings.game_statistic.num_walkthrough IS 'номер прохождения';
-COMMENT ON COLUMN sotr_settings.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
-COMMENT ON COLUMN sotr_settings.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
-COMMENT ON COLUMN sotr_settings.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
 
 CREATE TABLE sotr_settings.hero_state_lvl (
 	lvl_id int4 NOT NULL,
@@ -277,6 +280,74 @@ VALUES(13, 'Рыцарь Ада (Босс)', '- генерал армии Люц
 INSERT INTO sotr_settings.enemy_list
 (e_id, e_name, e_description, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
 VALUES(14, 'Люцифер (Секретный Босс)', '- король Ада и властитель темных сил. Бывший Ангел Рая.', '9-й круг ада', 0, 6666, 666, 11, 1.0, NULL);
+
+CREATE TABLE sotr_rec.saves(
+	save_id  int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	dt timestamp(0) NOT NULL DEFAULT now(),
+	save_cnt int4 default 0,
+	CONSTRAINT saves_pkey PRIMARY KEY (save_id)
+);
+COMMENT ON TABLE sotr_rec.saves IS 'Сохранение игры';
+
+COMMENT ON COLUMN sotr_rec.saves.save_id is 'id сохранения';
+COMMENT ON COLUMN sotr_rec.saves.dt is 'дата сохранения';
+COMMENT ON COLUMN sotr_rec.saves.save_cnt is 'количество сохранений';
+
+
+CREATE TABLE sotr_rec.hero (
+	h_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	h_name varchar NULL,
+	h_lvl int4 NULL,
+	h_exp int4 NULL,
+	h_heal_points int4 NULL,
+	h_attack int4 NULL,
+	h_agility float8 NULL,
+	h_weapon int4 NULL DEFAULT 2,
+	h_decoration int4 NULL,
+	save_id int4 NOT null,
+	CONSTRAINT hero_condition_h_name_key UNIQUE (h_name),
+	CONSTRAINT hero_condition_pkey PRIMARY KEY (h_id),
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id)
+);
+COMMENT ON TABLE sotr_rec.hero IS 'Сохранение характеристик персонажа в текущей сессии';
+
+
+CREATE TABLE sotr_rec.inventory (
+	in_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	in_items_id int4 NULL,
+	in_cnt int4 NULL,
+	save_id int4 NOT null,
+	CONSTRAINT inventory_pkey PRIMARY KEY (in_id),
+	CONSTRAINT un_in_items_id UNIQUE (in_items_id),
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id)
+);
+COMMENT ON TABLE sotr_rec.inventory IS 'Сохранение состояния инвентаря в текущей сессии';
+
+CREATE TABLE sotr_rec.enemy (
+	e_id int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	e_name varchar NULL,
+	e_location varchar NULL,
+	e_exp int4 NULL,
+	e_heal_points int4 NULL,
+	e_attack int4 NULL,
+	e_drop_items int4 NULL,
+	e_chance_drop float8 NULL,
+	e_weakness jsonb NULL,
+	save_id int4 NOT null,
+	CONSTRAINT enemy_pkey PRIMARY KEY (e_id),
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id)
+);
+COMMENT ON TABLE sotr_rec.enemy IS 'Сохранение списка врагов в действующей сессии';
+
+CREATE TABLE sotr_rec.game_statistic (
+	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	cnt_kill_enemy int4 NULL,
+	cnt_received_exp int4 NULL,
+	game_completed bool NULL,
+	cnt_kill_hero int4 NOT null,
+	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
+);
+COMMENT ON TABLE sotr_rec.game_statistic IS 'Статистика игры';
 
 CREATE OR REPLACE FUNCTION sotr_game.get_health()
  RETURNS text
@@ -447,7 +518,7 @@ begin
 	end if;
 
 	--Создание новой статистики
-	insert into sotr_settings.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed)
+	insert into sotr_game.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed)
 	values
 		(0,0,false);
  
@@ -466,7 +537,7 @@ begin
 
 	--Проверка. Если игра ранее была пройдена, то добавляется секретный босс
 	perform *
-    	from sotr_settings.game_statistic as gs
+    	from sotr_game.game_statistic as gs
 	where gs.game_completed;
 	if found then
 		perform sotr_settings.create_enemy(14, 1);
@@ -600,13 +671,13 @@ begin
 --		вызов функции убийства глав.героя, возврат к сейвпоинту. Временно прописал обнуление результатов
 		truncate sotr_game.g_enemy restart identity;
 		truncate sotr_game.g_inventory restart identity;
-		truncate sotr_settings.game_statistic restart identity;
+		truncate sotr_game.game_statistic restart identity;
 	
 		insert into sotr_game.g_inventory (in_items_id, in_cnt) values (2, 1);
 		update sotr_game.g_hero
 			set h_lvl = 1, h_exp = 0, h_heal_points = 200, h_attack = 15, h_agility = 0.01, h_weapon = 2, h_decoration = null
 		where h_id = 1;
-		insert into sotr_settings.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed) values (0, 0, false);
+		--insert into sotr_game.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed) values (0, 0, false);
 		perform sotr_game.start_game();
 		return jsonb_build_object('Вам нанесли смертельное ранение.','[Игра вернулась к контрольной точке]');
 	else	
@@ -857,7 +928,7 @@ begin
 	returning h_lvl, h_exp into p_hero_lvl_now, p_e_exp;
 
 	--Обновление статистики
-	update sotr_settings.game_statistic 
+	update sotr_game.game_statistic 
 		set cnt_kill_enemy = cnt_kill_enemy + 1,
 			cnt_received_exp = cnt_received_exp + p_e_exp
 	where not game_completed;
