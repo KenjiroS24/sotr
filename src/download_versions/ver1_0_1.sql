@@ -541,9 +541,9 @@ begin
 	end if;
 
 	--Создание новой статистики
-	insert into sotr_game.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed)
+	insert into sotr_game.game_statistic (cnt_kill_enemy, cnt_received_exp, cnt_kill_hero, game_completed)
 	values
-		(0,0,false);
+		(0,0,0,false);
  
 	perform sotr_settings.create_enemy(1, 3);
 	perform sotr_settings.create_enemy(2, 3);
