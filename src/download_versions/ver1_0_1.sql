@@ -75,6 +75,18 @@ COMMENT ON COLUMN sotr_game.game_statistic.cnt_kill_enemy IS 'кол-во уби
 COMMENT ON COLUMN sotr_game.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
 COMMENT ON COLUMN sotr_game.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
 
+CREATE TABLE sotr_game.saves(
+	save_id  int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
+	dt timestamp(0) NOT NULL DEFAULT now(),
+	save_cnt int4 default 0,
+	CONSTRAINT saves_pkey PRIMARY KEY (save_id)
+);
+COMMENT ON TABLE sotr_game.saves IS 'Сохранение игры';
+
+COMMENT ON COLUMN sotr_game.saves.save_id is 'id сохранения';
+COMMENT ON COLUMN sotr_game.saves.dt is 'дата сохранения';
+COMMENT ON COLUMN sotr_game.saves.save_cnt is 'количество сохранений';
+
 CREATE TABLE sotr_settings.attack_list (
 	att_id int4 NOT NULL,
 	enemy_attack text NOT NULL,
@@ -345,7 +357,9 @@ CREATE TABLE sotr_rec.game_statistic (
 	cnt_received_exp int4 NULL,
 	game_completed bool NULL,
 	cnt_kill_hero int4 NOT null,
-	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
+	save_id int4 NOT null,
+	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough),
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id)
 );
 COMMENT ON TABLE sotr_rec.game_statistic IS 'Статистика игры';
 
