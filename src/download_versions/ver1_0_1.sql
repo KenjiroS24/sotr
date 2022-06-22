@@ -64,6 +64,7 @@ CREATE TABLE sotr_game.game_statistic (
 	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	cnt_kill_enemy int4 NULL,
 	cnt_received_exp int4 NULL,
+	cnt_kill_hero int4 NOT null,
 	game_completed bool NULL,
 	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough)
 );
@@ -73,6 +74,7 @@ COMMENT ON TABLE sotr_game.game_statistic IS 'Статистика игры';
 COMMENT ON COLUMN sotr_game.game_statistic.num_walkthrough IS 'номер прохождения';
 COMMENT ON COLUMN sotr_game.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
 COMMENT ON COLUMN sotr_game.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
+COMMENT ON COLUMN sotr_game.game_statistic.cnt_kill_hero IS 'кол-во поражений героя';
 COMMENT ON COLUMN sotr_game.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
 
 CREATE TABLE sotr_game.saves(
@@ -355,13 +357,20 @@ CREATE TABLE sotr_rec.game_statistic (
 	num_walkthrough int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	cnt_kill_enemy int4 NULL,
 	cnt_received_exp int4 NULL,
-	game_completed bool NULL,
 	cnt_kill_hero int4 NOT null,
+	game_completed bool NULL,
 	save_id int4 NOT null,
 	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough),
 	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id)
 );
 COMMENT ON TABLE sotr_rec.game_statistic IS 'Статистика игры';
+
+COMMENT ON COLUMN sotr_rec.game_statistic.num_walkthrough IS 'номер прохождения';
+COMMENT ON COLUMN sotr_rec.game_statistic.cnt_kill_enemy IS 'кол-во убитых врагов в прохождении';
+COMMENT ON COLUMN sotr_rec.game_statistic.cnt_received_exp IS 'кол-во полученной экспы';
+COMMENT ON COLUMN sotr_rec.game_statistic.cnt_kill_hero IS 'кол-во поражений героя';
+COMMENT ON COLUMN sotr_rec.game_statistic.game_completed IS 'игра пройдена? Если убит Рыцарь Ада, то да';
+COMMENT ON COLUMN sotr_rec.game_statistic.save_id IS 'id сохранения';
 
 CREATE OR REPLACE FUNCTION sotr_game.get_health()
  RETURNS text
