@@ -80,7 +80,7 @@ COMMENT ON COLUMN sotr_game.game_statistic.game_completed IS 'игра прой�
 CREATE TABLE sotr_game.saves(
 	save_id  int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	dt timestamp(0) NOT NULL DEFAULT now(),
-	save_cnt int4 default 0,
+	save_cnt int4 default 1,
 	CONSTRAINT saves_pkey PRIMARY KEY (save_id)
 );
 COMMENT ON TABLE sotr_game.saves IS 'Сохранение игры';
