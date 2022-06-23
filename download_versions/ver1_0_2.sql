@@ -1,5 +1,5 @@
 --VER 1.0.2
---14:25 23.06.2022
+--14:50 23.06.2022
 
 --------------------------------------------
 
@@ -295,19 +295,6 @@ INSERT INTO sotr_settings.enemy_list
 (e_id, e_name, e_description, e_location, e_exp, e_heal_points, e_attack, e_drop_items, e_chance_drop, e_weakness)
 VALUES(14, 'Люцифер (Секретный Босс)', '- король Ада и властитель темных сил. Бывший Ангел Рая.', '9-й круг ада', 0, 6666, 666, 11, 1.0, NULL);
 
-CREATE TABLE sotr_rec.saves(
-	save_id  int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
-	dt timestamp(0) NOT NULL DEFAULT now(),
-	save_cnt int4 default 0,
-	CONSTRAINT saves_pkey PRIMARY KEY (save_id)
-);
-COMMENT ON TABLE sotr_rec.saves IS 'Сохранение игры';
-
-COMMENT ON COLUMN sotr_rec.saves.save_id is 'id сохранения';
-COMMENT ON COLUMN sotr_rec.saves.dt is 'дата сохранения';
-COMMENT ON COLUMN sotr_rec.saves.save_cnt is 'количество сохранений';
-
-
 CREATE TABLE sotr_rec.hero (
 	h_id int4 NOT NULL,
 	h_name varchar NULL,
@@ -321,7 +308,7 @@ CREATE TABLE sotr_rec.hero (
 	save_id int4 NOT null,
 	CONSTRAINT hero_condition_h_name_key UNIQUE (h_name),
 	CONSTRAINT hero_condition_pkey PRIMARY KEY (h_id, save_id),
-	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 COMMENT ON TABLE sotr_rec.hero IS 'Сохранение характеристик персонажа в текущей сессии';
 
@@ -333,7 +320,7 @@ CREATE TABLE sotr_rec.inventory (
 	save_id int4 NOT null,
 	CONSTRAINT inventory_pkey PRIMARY KEY (in_id, save_id),
 	CONSTRAINT un_in_items_id UNIQUE (in_items_id),
-	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 COMMENT ON TABLE sotr_rec.inventory IS 'Сохранение состояния инвентаря в текущей сессии';
 
@@ -349,7 +336,7 @@ CREATE TABLE sotr_rec.enemy (
 	e_weakness jsonb NULL,
 	save_id int4 NOT null,
 	constraint enemy_pkey PRIMARY key (e_id, save_id),
-	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 COMMENT ON TABLE sotr_rec.enemy IS 'Сохранение списка врагов в действующей сессии';
 
@@ -361,7 +348,7 @@ CREATE TABLE sotr_rec.game_statistic (
 	game_completed bool NULL,
 	save_id int4 NOT null,
 	CONSTRAINT game_statistic_pkey PRIMARY KEY (num_walkthrough, save_id),
-	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_rec.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
+	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 COMMENT ON TABLE sotr_rec.game_statistic IS 'Статистика игры';
 
