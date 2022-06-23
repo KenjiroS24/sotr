@@ -1036,7 +1036,7 @@ CREATE OR REPLACE FUNCTION sotr_game.load_game(_save_id integer)
 AS $function$
 begin 
 	
-	select * from sotr_game.saves s where s.save_id = _save_id;
+	perform * from sotr_game.saves s where s.save_id = _save_id;
 	if not found then
 		return 'Сохранения с таким ID не найдено.';
 	end if;
