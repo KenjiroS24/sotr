@@ -597,6 +597,7 @@ p_heal_points_enemy int;
 p_heal_points_hero int;
 p_show_heal_points_enemy text;
 p_show_heal_points_hero text;
+p_save_id int;
 
 begin
 
@@ -676,17 +677,16 @@ begin
 
 	--Смерть героя
 	if p_heal_points_hero <= 0 then
---		вызов функции убийства глав.героя, возврат к сейвпоинту. Временно прописал обнуление результатов
-		truncate sotr_game.g_enemy restart identity;
-		truncate sotr_game.g_inventory restart identity;
-		truncate sotr_game.game_statistic restart identity;
-	
-		insert into sotr_game.g_inventory (in_items_id, in_cnt) values (2, 1);
-		update sotr_game.g_hero
-			set h_lvl = 1, h_exp = 0, h_heal_points = 200, h_attack = 15, h_agility = 0.01, h_weapon = 2, h_decoration = null
-		where h_id = 1;
-		--insert into sotr_game.game_statistic (cnt_kill_enemy, cnt_received_exp, game_completed) values (0, 0, false);
-		perform sotr_game.start_game();
+		select save_id into p_save_id from sotr_game.saves s order by dt desc limit 1;
+		if p_save_id is null then
+			--Если нет сохранений, сбросить и загрузить игру заново
+			perform sotr_game.drop_game();
+			perform sotr_game.start_game();
+		else
+			--Загрузка последнего сохранения (по времени)
+			perform sotr_game.load_game((select save_id from sotr_game.saves s order by dt desc limit 1));
+		end if;
+
 		return jsonb_build_object('Вам нанесли смертельное ранение.','[Игра вернулась к контрольной точке]');
 	else	
 		p_show_heal_points_hero = p_heal_points_hero::text || '/' || p_hero_max_hp::text;
