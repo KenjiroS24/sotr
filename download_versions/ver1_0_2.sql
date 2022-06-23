@@ -1044,3 +1044,117 @@ begin
 end;
 $function$
 ;
+
+CREATE OR REPLACE FUNCTION sotr_game.load_game(_save_id integer)
+ RETURNS text
+ LANGUAGE plpgsql
+AS $function$
+begin 
+	
+	select * from sotr_game.saves s where s.save_id = _save_id;
+	if not found then
+		return 'Сохранения с таким ID не найдено.';
+	end if;
+	
+	truncate table sotr_game.g_enemy cascade;
+	truncate table sotr_game.g_hero cascade;
+	truncate table sotr_game.g_inventory cascade;
+	truncate table sotr_game.game_statistic cascade;
+	
+	insert into sotr_game.g_enemy (e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness)
+	select e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness 
+		from sotr_rec.enemy as e 
+	where save_id = _save_id;
+	
+	insert into sotr_game.g_hero (h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration)
+	select h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration
+		from sotr_rec.hero 
+	where save_id = _save_id;
+	
+	insert into sotr_game.g_inventory (in_items_id,in_cnt)
+	select in_items_id, in_cnt
+		from sotr_rec.inventory
+	where save_id = _save_id;
+	
+	insert into sotr_game.game_statistic (cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed)
+	select cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed
+		from sotr_rec.game_statistic
+	where save_id = _save_id;
+
+	return 'Игра загружена.';
+
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_game.load_game(int4) IS 'Функцию по загрузке игры. При запуске данные будут стерты и загружены исходя из ячейки сохранения.';
+
+CREATE OR REPLACE FUNCTION sotr_game.save_game(_save_id integer DEFAULT NULL::integer)
+ RETURNS text
+ LANGUAGE plpgsql
+AS $function$
+declare
+p_save_id int;
+p_res text;
+
+begin 
+	
+	--Если айди записи не задан, создается новое сохранение
+	if _save_id is null then
+		insert into sotr_game.saves (dt, save_cnt) values (now(),1)
+			returning save_id into p_save_id;
+
+		insert into sotr_rec.enemy (e_id,e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness,save_id)
+		select e_id,e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness,p_save_id
+			from sotr_game.g_enemy;
+		
+		insert into sotr_rec.hero (h_id,h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration,save_id)
+		select h_id,h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration,p_save_id
+			from sotr_game.g_hero;
+		
+		insert into sotr_rec.inventory (in_id,in_items_id,in_cnt,save_id)
+		select in_id, in_items_id, in_cnt, p_save_id 
+			from sotr_game.g_inventory;
+		
+		insert into sotr_rec.game_statistic (num_walkthrough,cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed,save_id)
+		select num_walkthrough,cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed,p_save_id
+			from sotr_game.game_statistic;
+		
+		p_res = ('Создана новая запись сохранения. ID: ' || p_save_id);
+		return p_res;
+	--Если айди записи задан, указанное сохранение перезаписывается
+	elsif exists (select * from sotr_game.saves s where s.save_id = _save_id) then
+		update sotr_game.saves 
+			set dt = now(),
+				save_cnt = save_cnt + 1
+		where save_id = _save_id;
+	
+		update sotr_rec.enemy as re set e_heal_points = ge.e_heal_points 
+			from sotr_game.g_enemy as ge
+		where save_id = _save_id and re.e_id = ge.e_id;
+	
+		update sotr_rec.hero as rh set h_lvl = gh.h_lvl, h_exp = gh.h_exp, h_heal_points = gh.h_heal_points, 
+			h_attack = gh.h_attack, h_agility = gh.h_agility, h_weapon = gh.h_weapon, h_decoration = gh.h_decoration
+			from sotr_game.g_hero as gh
+		where save_id = _save_id and rh.h_id = gh.h_id;
+	
+		update sotr_rec.inventory as ri set in_items_id = gi.in_items_id, in_cnt = gi.in_cnt
+			from sotr_game.g_inventory as gi
+		where save_id = _save_id and ri.in_id = gi.in_id;
+	
+		update sotr_rec.game_statistic as rg set cnt_kill_enemy = gs.cnt_kill_enemy, cnt_received_exp = gs.cnt_received_exp, 
+			cnt_kill_hero = gs.cnt_kill_hero, game_completed = gs.game_completed
+			from sotr_game.game_statistic as gs
+		where save_id = _save_id and gs.num_walkthrough = rg.num_walkthrough;
+	
+		p_res = ('Файл сохранения ID:' || _save_id || ' перезаписан.');
+		return p_res;
+	else 
+		p_res = 'Некорректный ID сохранения';
+		return p_res;
+	end if;
+end;
+$function$
+;
+
+COMMENT ON FUNCTION sotr_game.save_game(int4) IS 'Функция по сохранению прогресса. Если запустить без вх. параметра, произойдет сохранение на новую ячейку, если указать, будет перезапись.';
