@@ -1042,29 +1042,37 @@ begin
 	end if;
 	
 	truncate table sotr_game.g_enemy cascade;
-	truncate table sotr_game.g_hero cascade;
 	truncate table sotr_game.g_inventory cascade;
-	truncate table sotr_game.game_statistic cascade;
 	
 	insert into sotr_game.g_enemy (e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness)
 	select e_name,e_location,e_exp,e_heal_points,e_attack,e_drop_items,e_chance_drop,e_weakness 
 		from sotr_rec.enemy as e 
 	where save_id = _save_id;
 	
-	insert into sotr_game.g_hero (h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration)
-	select h_name,h_lvl,h_exp,h_heal_points,h_attack,h_agility,h_weapon,h_decoration
-		from sotr_rec.hero 
-	where save_id = _save_id;
-	
 	insert into sotr_game.g_inventory (in_items_id,in_cnt)
 	select in_items_id, in_cnt
 		from sotr_rec.inventory
 	where save_id = _save_id;
+
+	update sotr_game.g_hero as g
+		set h_name = r.h_name,
+			h_lvl = r.h_lvl,
+			h_exp = r.h_exp,
+			h_heal_points = r.h_heal_points,
+			h_attack = r.h_attack,
+			h_agility = r.h_agility,
+			h_weapon = r.h_weapon,
+			h_decoration = r.h_decoration
+		from sotr_rec.hero as r
+	where r.save_id = _save_id and r.h_id = g.h_id;
 	
-	insert into sotr_game.game_statistic (cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed)
-	select cnt_kill_enemy,cnt_received_exp,cnt_kill_hero,game_completed
-		from sotr_rec.game_statistic
-	where save_id = _save_id;
+	update sotr_game.game_statistic as g
+		set cnt_kill_enemy = r.cnt_kill_enemy,
+			cnt_received_exp = r.cnt_received_exp,
+			cnt_kill_hero = r.cnt_kill_hero,
+			game_completed = r.game_completed
+		from sotr_rec.game_statistic as r
+	where r.save_id = _save_id and g.num_walkthrough = r.num_walkthrough;
 
 	return 'Игра загружена.';
 
