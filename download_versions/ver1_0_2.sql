@@ -299,7 +299,7 @@ CREATE TABLE sotr_rec.saves(
 	save_id  int4 NOT NULL GENERATED ALWAYS AS IDENTITY,
 	dt timestamp(0) NOT NULL DEFAULT now(),
 	save_cnt int4 default 0,
-	CONSTRAINT saves_pkey PRIMARY KEY (save_id) ON DELETE CASCADE ON UPDATE CASCADE
+	CONSTRAINT saves_pkey PRIMARY KEY (save_id)
 );
 COMMENT ON TABLE sotr_rec.saves IS 'Сохранение игры';
 
