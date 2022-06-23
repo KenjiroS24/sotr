@@ -318,7 +318,6 @@ CREATE TABLE sotr_rec.inventory (
 	in_cnt int4 NULL,
 	save_id int4 NOT null,
 	CONSTRAINT inventory_pkey PRIMARY KEY (in_id, save_id),
-	CONSTRAINT un_in_items_id UNIQUE (in_items_id),
 	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 COMMENT ON TABLE sotr_rec.inventory IS 'Сохранение состояния инвентаря в текущей сессии';
