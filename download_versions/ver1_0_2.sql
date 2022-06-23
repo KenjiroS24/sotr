@@ -306,7 +306,6 @@ CREATE TABLE sotr_rec.hero (
 	h_weapon int4 NULL DEFAULT 2,
 	h_decoration int4 NULL,
 	save_id int4 NOT null,
-	CONSTRAINT hero_condition_h_name_key UNIQUE (h_name),
 	CONSTRAINT hero_condition_pkey PRIMARY KEY (h_id, save_id),
 	constraint hero_condition_fkey foreign key (save_id) REFERENCES sotr_game.saves (save_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
